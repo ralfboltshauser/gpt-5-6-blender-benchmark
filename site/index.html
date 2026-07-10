@@ -58,7 +58,7 @@
           </figure>
           <div class="comparison-arrow" aria-hidden="true">→</div>
           <figure>
-            <div class="image-frame model-stage" data-model-viewer data-model="assets/models/sol-ultra-diorama.glb" data-load="idle" data-view="poster" data-manual="false" role="group" aria-label="Sol Ultra interactive 3D scene. Hover, tap, or use the button to explore.">
+            <div class="image-frame model-stage" data-model-viewer data-model="assets/models/sol-ultra-diorama.glb" data-load="idle" data-view="poster" data-manual="false" role="group" aria-label="Sol Ultra live 3D scene. Drag to orbit or use the scene controls.">
               <img class="model-poster" src="assets/renders/gpt-5-6-sol-ultra.webp" alt="Sol Ultra output: a detailed low-poly cabin, path, props and forest" width="1600" height="900">
               <div class="model-canvas-mount" data-viewer-canvas aria-hidden="true" inert></div>
               <div class="model-loading" aria-hidden="true"><span></span></div>
@@ -69,7 +69,7 @@
                   <ellipse cx="16" cy="16" rx="14" ry="6" transform="rotate(-22 16 16)"></ellipse>
                   <circle cx="28.5" cy="10.5" r="1.6"></circle>
                 </svg>
-                <span class="model-discovery-copy"><strong>Live 3D scene</strong><small class="model-discovery-hover">Hover image to enter</small><small class="model-discovery-tap">Tap image to enter</small></span>
+                <span class="model-discovery-copy"><strong>Live 3D scene</strong><small class="model-discovery-hover">Loading interactive view</small><small class="model-discovery-tap">Tap to load scene</small></span>
               </div>
               <button class="model-launch" type="button" data-viewer-launch><span data-viewer-launch-label>Open 3D scene</span><span aria-hidden="true">↗</span></button>
               <div class="model-toolbar" data-viewer-toolbar inert>
@@ -79,11 +79,11 @@
                   <button type="button" data-viewer-reset>Reset view</button>
                 </div>
               </div>
-              <p class="model-hint model-hint-preview">Drag to orbit <span>·</span> Interact to keep open</p>
-              <p class="model-hint model-hint-pinned">Drag to orbit <span>·</span> Pinch or scroll to zoom</p>
+              <p class="model-hint model-hint-ambient"><span class="model-hint-motion">Auto rotating <i>·</i> Drag to take control</span><span class="model-hint-static">Live 3D <i>·</i> Drag to explore</span></p>
+              <p class="model-hint model-hint-pinned">Drag to orbit <i>·</i> Pinch or scroll to zoom</p>
               <p class="sr-only" aria-live="off" data-viewer-status>Static preview</p>
             </div>
-            <figcaption><span><b class="model-caption-badge">3D</b> Hover or tap to enter the scene</span><strong>GPT‑5.6 Sol · Ultra</strong></figcaption>
+            <figcaption><span><b class="model-caption-badge">3D</b> Live scene · drag to orbit</span><strong>GPT‑5.6 Sol · Ultra</strong></figcaption>
           </figure>
         </div>
         <p class="hero-caption">Sol Ultra won the geometry-first benchmark by seven points. Sol xhigh used 29% of its tokens and 31% of its time.</p>

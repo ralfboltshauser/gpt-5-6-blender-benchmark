@@ -387,20 +387,17 @@ function setupHeroViewer() {
   const toolbar = host.querySelector("[data-viewer-toolbar]");
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
   const saveData = Boolean(connection?.saveData);
-  const hoverPreview = matchMedia("(hover: hover) and (pointer: fine)").matches && !saveData;
-  const manualStart = !hoverPreview;
+  const autoStart = !saveData;
   host.dataset.enhanced = "true";
-  host.dataset.manual = String(manualStart);
+  host.dataset.manual = String(!autoStart);
   host.dataset.load = "idle";
-  host.dataset.view = "poster";
+  host.dataset.view = autoStart ? "ambient" : "poster";
   toolbar.inert = true;
 
   let controller = null;
   let loadPromise = null;
-  let pointerInside = false;
   let pinned = false;
-  let suppressHover = false;
-  let hoverTimer = 0;
+  let ambientEnabled = autoStart;
 
   const setView = view => {
     host.dataset.view = view;
@@ -424,7 +421,7 @@ function setupHeroViewer() {
         launchButton.disabled = false;
         setLaunchLabel("Open 3D scene");
         if (pinned) setView("pinned");
-        else if (pointerInside && !suppressHover) setView("preview");
+        else if (ambientEnabled) setView("ambient");
         else setView("poster");
         return viewer;
       })
@@ -432,6 +429,7 @@ function setupHeroViewer() {
         controller = null;
         loadPromise = null;
         pinned = false;
+        ambientEnabled = false;
         host.dataset.load = "failed";
         setView("poster");
         launchButton.disabled = false;
@@ -446,13 +444,13 @@ function setupHeroViewer() {
     const status = host.querySelector("[data-viewer-status]");
     if (!status) return;
     status.setAttribute("aria-live", "polite");
-    status.textContent = "Interactive 3D preview ready";
+    status.textContent = "Live 3D scene ready";
   };
 
   const pinViewer = event => {
     const keyboardActivation = event?.detail === 0;
     pinned = true;
-    suppressHover = false;
+    ambientEnabled = false;
     setView("pinned");
     start({ announce: true }).then(viewer => {
       if (!viewer || !pinned) return;
@@ -464,7 +462,7 @@ function setupHeroViewer() {
 
   const showPoster = () => {
     pinned = false;
-    suppressHover = true;
+    ambientEnabled = false;
     setView("poster");
     launchButton.focus({ preventScroll: true });
   };
@@ -477,33 +475,14 @@ function setupHeroViewer() {
     pinViewer(event);
   });
 
-  host.addEventListener("pointerenter", () => {
-    if (!hoverPreview) return;
-    pointerInside = true;
-    suppressHover = false;
-    clearTimeout(hoverTimer);
-    hoverTimer = setTimeout(() => {
-      if (!pointerInside || suppressHover || pinned) return;
-      setView("preview");
-      start().then(viewer => {
-        if (viewer && pointerInside && !pinned && !suppressHover) setView("preview");
-      });
-    }, 120);
-  });
-
-  host.addEventListener("pointerleave", () => {
-    pointerInside = false;
-    suppressHover = false;
-    clearTimeout(hoverTimer);
-    if (!pinned) setView("poster");
-  });
-
-  // Any deliberate canvas interaction pins the live view. Passive hover does
-  // not capture the wheel, so the page remains easy to scroll.
+  // The ambient loop stops on the first deliberate canvas interaction so it
+  // never fights the visitor's orbit controls.
   host.addEventListener("pointerdown", event => {
-    if (event.target.closest("canvas") && host.dataset.view === "preview") {
+    if (event.target.closest("canvas") && host.dataset.view === "ambient") {
       pinned = true;
+      ambientEnabled = false;
       setView("pinned");
+      announceReady();
     }
   });
 
@@ -512,6 +491,7 @@ function setupHeroViewer() {
     controller = null;
     loadPromise = null;
     pinned = false;
+    ambientEnabled = false;
     host.dataset.viewerMounted = "false";
     launchButton.disabled = false;
     setLaunchLabel("Retry 3D");
@@ -522,16 +502,7 @@ function setupHeroViewer() {
     if (event.key === "Escape" && host.dataset.view !== "poster") showPoster();
   });
 
-  if (!hoverPreview) return;
-
-  const loadObserver = new IntersectionObserver((entries) => {
-    if (!entries[0].isIntersecting) return;
-    loadObserver.disconnect();
-    const warm = () => start({ announce: false });
-    if ("requestIdleCallback" in window) requestIdleCallback(warm, { timeout: 1800 });
-    else setTimeout(warm, 600);
-  }, { rootMargin: "250px" });
-  loadObserver.observe(host);
+  if (autoStart) start({ announce: false });
 }
 
 setupHeroViewer();

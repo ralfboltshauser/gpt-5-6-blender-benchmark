@@ -200,17 +200,16 @@ The build pipeline:
 5. Exports those meshes as `KHR_materials_unlit`, so Three.js does not need runtime lights or shadow maps.
 6. Converts the embedded delivery textures to WebP, then applies quantization, pruning and Meshopt compression.
 
-Two 1K atlases tested better than one 2K atlas here. They give the cabin its own UV domain, reduce decoded texture memory by half and produce a smaller delivered GLB. WebP keeps the browser path native and simple. KTX2 could reduce GPU memory further, but would add a transcoder for a hover-only asset that already stays near 11 MB. The decision is measured for this scene rather than treated as a universal rule. See Blender's [Cycles baking documentation](https://docs.blender.org/manual/en/5.0/render/cycles/baking.html), the [Three.js glTF loader](https://threejs.org/docs/pages/GLTFLoader.html) and Khronos's [KTX guidance](https://www.khronos.org/ktx/) for the underlying tradeoffs.
+Two 1K atlases tested better than one 2K atlas here. They give the cabin its own UV domain, reduce decoded texture memory by half and produce a smaller delivered GLB. WebP keeps the browser path native and simple. KTX2 could reduce GPU memory further, but would add a transcoder for an ambient hero asset that already stays near 11 MB. The decision is measured for this scene rather than treated as a universal rule. See Blender's [Cycles baking documentation](https://docs.blender.org/manual/en/5.0/render/cycles/baking.html), the [Three.js glTF loader](https://threejs.org/docs/pages/GLTFLoader.html) and Khronos's [KTX guidance](https://www.khronos.org/ktx/) for the underlying tradeoffs.
 
 The viewer is also intentionally restrained:
 
-- It always keeps the WebP render as the default poster and fallback.
-- Fine-pointer desktops warm the 3D asset during idle time, but reveal it only after hover intent.
-- Leaving the frame restores the image unless the visitor has interacted with the model.
-- Touch devices and save-data connections require an explicit “Explore in 3D” tap.
+- It keeps the WebP render as the fast first paint and fallback, then crossfades into the live scene as soon as the GLB is ready.
+- The default camera moves through a gentle eight-second loop, making the depth and interactivity visible without requiring hover discovery.
+- The first deliberate canvas interaction stops the ambient loop and hands full orbit control to the visitor.
+- Reduced-motion visitors receive the live scene without ambient movement; save-data connections keep the explicit launch step.
 - Orbit, pitch and zoom are bounded to the useful front hemisphere because the scene was authored for one camera.
-- Passive hover does not capture the mouse wheel. Zoom is enabled only after the view is pinned.
-- Rendering is event-driven and pauses offscreen, following Three.js's [render-on-demand guidance](https://threejs.org/manual/en/rendering-on-demand.html).
+- Ambient rendering is capped at 30 fps and pauses offscreen or in a hidden tab. After interaction, rendering returns to an event-driven loop following Three.js's [render-on-demand guidance](https://threejs.org/manual/en/rendering-on-demand.html).
 - Drawing resolution is capped by a pixel budget instead of blindly using the device's full pixel ratio.
 
 Rebuild the model and bundled viewer with Blender 5.0.1, Node.js and npm:

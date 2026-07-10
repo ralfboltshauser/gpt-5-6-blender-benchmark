@@ -6,6 +6,9 @@ import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 
 const INITIAL_CAMERA = new THREE.Vector3(22.2, 15.2, 32);
 const INITIAL_TARGET = new THREE.Vector3(-0.15, 2.75, -0.45);
+const AMBIENT_PERIOD_MS = 8000;
+const AMBIENT_AZIMUTH = THREE.MathUtils.degToRad(6.5);
+const AMBIENT_FRAME_MS = 1000 / 30;
 
 
 function drawingPixelRatio(width, height) {
@@ -28,7 +31,7 @@ export async function mountHeroViewer(host, { announce = false } = {}) {
   if (!host || host.dataset.viewerMounted === "true") return null;
   host.dataset.viewerMounted = "true";
   host.dataset.load = "loading";
-  updateStatus(host, "Loading interactive 3D preview", announce);
+  updateStatus(host, "Loading live 3D scene", announce);
 
   const canvasMount = host.querySelector("[data-viewer-canvas]");
   const toolbar = host.querySelector("[data-viewer-toolbar]");
@@ -91,7 +94,13 @@ export async function mountHeroViewer(host, { announce = false } = {}) {
   let frameRequest = 0;
   let isVisible = true;
   let viewActive = false;
+  let viewMode = "poster";
+  let ambientStartedAt = performance.now();
+  let ambientLastFrame = 0;
   let disposed = false;
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  const ambientBase = new THREE.Spherical().setFromVector3(INITIAL_CAMERA.clone().sub(INITIAL_TARGET));
+  const ambientPosition = ambientBase.clone();
 
   function resize() {
     const bounds = canvasMount.getBoundingClientRect();
@@ -107,13 +116,26 @@ export async function mountHeroViewer(host, { announce = false } = {}) {
     return true;
   }
 
-  function renderFrame() {
+  function renderFrame(timestamp) {
     frameRequest = 0;
     if (disposed || !viewActive || !isVisible || document.hidden) return;
+    const ambientMotion = viewMode === "ambient" && !reducedMotion.matches;
+    if (ambientMotion && timestamp - ambientLastFrame < AMBIENT_FRAME_MS) {
+      requestRender();
+      return;
+    }
+    ambientLastFrame = timestamp;
     resize();
+    if (ambientMotion) {
+      const phase = ((timestamp - ambientStartedAt) % AMBIENT_PERIOD_MS) / AMBIENT_PERIOD_MS * Math.PI * 2;
+      ambientPosition.copy(ambientBase);
+      ambientPosition.theta += Math.sin(phase) * AMBIENT_AZIMUTH;
+      camera.position.setFromSpherical(ambientPosition).add(controls.target);
+      camera.lookAt(controls.target);
+    }
     const controlsChanged = controls.update();
     renderer.render(scene, camera);
-    if (controlsChanged) requestRender();
+    if (controlsChanged || ambientMotion) requestRender();
   }
 
   function requestRender() {
@@ -140,6 +162,12 @@ export async function mountHeroViewer(host, { announce = false } = {}) {
   };
   document.addEventListener("visibilitychange", onVisibilityChange);
 
+  const onReducedMotionChange = () => {
+    ambientStartedAt = performance.now();
+    if (viewActive) requestRender();
+  };
+  reducedMotion.addEventListener?.("change", onReducedMotionChange);
+
   const onContextLost = (event) => {
     event.preventDefault();
     host.dataset.load = "failed";
@@ -155,7 +183,7 @@ export async function mountHeroViewer(host, { announce = false } = {}) {
     const gltf = await loader.loadAsync(modelUrl, (event) => {
       if (!event.total || !announce) return;
       const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
-      updateStatus(host, `Loading interactive 3D preview · ${percent}%`, true);
+      updateStatus(host, `Loading live 3D scene · ${percent}%`, true);
     });
 
     const model = gltf.scene;
@@ -178,12 +206,12 @@ export async function mountHeroViewer(host, { announce = false } = {}) {
     });
 
     // Compile shaders and upload both baked textures while the poster is still
-    // opaque. The first hover therefore reveals a complete frame, not a pop-in.
+    // opaque. The automatic handoff therefore reveals a complete frame.
     resize();
     renderer.compile(scene, camera);
     renderer.render(scene, camera);
     host.dataset.load = "ready";
-    updateStatus(host, "Interactive 3D preview ready", announce);
+    updateStatus(host, "Live 3D scene ready", announce);
   } catch (error) {
     host.dataset.load = "failed";
     host.dataset.view = "poster";
@@ -194,17 +222,24 @@ export async function mountHeroViewer(host, { announce = false } = {}) {
   }
 
   function setView(view) {
-    viewActive = view === "preview" || view === "pinned";
+    const enteringAmbient = view === "ambient" && viewMode !== "ambient";
+    viewMode = view;
+    viewActive = view === "ambient" || view === "pinned";
     controls.enabled = viewActive;
     controls.enableZoom = view === "pinned";
     canvasMount.inert = !viewActive;
     if (toolbar) toolbar.inert = !viewActive;
+    if (enteringAmbient) {
+      ambientStartedAt = performance.now();
+      ambientLastFrame = 0;
+    }
     if (viewActive) requestRender();
   }
 
   function resetView() {
     camera.position.copy(INITIAL_CAMERA);
     controls.target.copy(INITIAL_TARGET);
+    if (viewMode === "ambient") ambientStartedAt = performance.now();
     controls.update();
     requestRender();
   }
@@ -215,6 +250,7 @@ export async function mountHeroViewer(host, { announce = false } = {}) {
     resizeObserver.disconnect();
     visibilityObserver.disconnect();
     document.removeEventListener("visibilitychange", onVisibilityChange);
+    reducedMotion.removeEventListener?.("change", onReducedMotionChange);
     controls.dispose();
     scene.traverse((object) => {
       if (object.geometry) object.geometry.dispose();
