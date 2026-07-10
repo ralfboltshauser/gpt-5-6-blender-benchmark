@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="site/assets/social/og-card.png" alt="One image, fifteen Blender scenes — GPT-5.6 benchmark" width="1200">
+  <img src="site/assets/social/og-card.png" alt="One image, fifteen Blender scenes | GPT-5.6 benchmark" width="1200">
 </p>
 
 <h1 align="center">GPT‑5.6 Blender Benchmark</h1>
@@ -71,10 +71,10 @@ No scene graph, modeling recipe, asset library, target camera, polygon budget, r
 
 | Model family | low | medium | high | xhigh | ultra |
 |---|:---:|:---:|:---:|:---:|:---:|
-| GPT‑5.6 Luna | ✓ | ✓ | ✓ | ✓ | — |
+| GPT‑5.6 Luna | ✓ | ✓ | ✓ | ✓ | n/a |
 | GPT‑5.6 Terra | ✓ | ✓ | ✓ | ✓ | ✓ |
 | GPT‑5.6 Sol | ✓ | ✓ | ✓ | ✓ | ✓ |
-| GPT‑5.5 baseline | — | — | — | ✓ | — |
+| GPT‑5.5 baseline | n/a | n/a | n/a | ✓ | n/a |
 
 The original folder names use `light` for telemetry effort `low`, and `extra-high` for `xhigh`. There is no `max` run in the source artifacts, and no Luna Ultra run.
 
@@ -98,7 +98,7 @@ The original folder names use `light` for telemetry effort `low`, and `extra-hig
 | 14 | [Terra Light](gpt-5.6-terra-light/) | **35** | 3:47 | 245K | 408 | 88 lines |
 | 15 | [Luna Medium](gpt-5.6-luna-medium/) | **34** | 3:32 | 248K | 322 | 135 lines |
 
-The audited machine-readable table—including input, cached input, output, reasoning, tool-call, geometry, and file data—is available at [`site/assets/data/benchmark.csv`](site/assets/data/benchmark.csv).
+The audited machine-readable table, including input, cached input, output, reasoning, tool-call, geometry, and file data, is available at [`site/assets/data/benchmark.csv`](site/assets/data/benchmark.csv).
 
 ## What the renders show
 
@@ -120,7 +120,7 @@ Sol Medium and High produced visibly separated or exploded roof geometry. Terra 
 
 ### 4. Every configuration still delivered
 
-All 15 `.blend` files reopen in Blender 5.0.1, and all expected renders are valid and nonblank. Most GPT‑5.6 runs initially used stale Blender API assumptions—especially the `BLENDER_EEVEE_NEXT` enum—and recovered through diagnosis, patching, and re-rendering.
+All 15 `.blend` files reopen in Blender 5.0.1, and all expected renders are valid and nonblank. Most GPT‑5.6 runs initially used stale Blender API assumptions, especially the `BLENDER_EEVEE_NEXT` enum, and recovered through diagnosis, patching, and re-rendering.
 
 ### 5. This is semantic reconstruction, not inverse graphics
 
@@ -130,10 +130,10 @@ None of the generated scripts loads, samples, measures, or camera-calibrates aga
 
 The strongest builds were separated less by raw polygon count than by four modeling decisions:
 
-1. **Coherent geometry** — continuous terrain, tapered paths, and dimensionally correct gables instead of stacked decorative slabs.
-2. **Composition before detail** — framing trees, a leading path, fence, woodpile, foreground props, and distant mountains.
-3. **Lighting hierarchy** — warm local window lights, a broad key, and cooler environmental fill.
-4. **Controlled placement** — keeping the path, door, windows, and silhouette readable while adding vegetation.
+1. **Coherent geometry:** continuous terrain, tapered paths, and dimensionally correct gables instead of stacked decorative slabs.
+2. **Composition before detail:** framing trees, a leading path, fence, woodpile, foreground props, and distant mountains.
+3. **Lighting hierarchy:** warm local window lights, a broad key, and cooler environmental fill.
+4. **Controlled placement:** keeping the path, door, windows, and silhouette readable while adding vegetation.
 
 Sol xhigh is the best engineering balance in this set: five meaningful collections, reusable geometry helpers, deterministic terrain, custom mountains, and 499 meshes. Sol Ultra is the most ambitious. Terra Ultra has the most disciplined placement logic. GPT‑5.5 xhigh is the most software-like standalone builder.
 
@@ -142,6 +142,48 @@ Sol xhigh is the best engineering balance in this set: five meaningful collectio
 </p>
 
 <p align="center"><sub>The image above is an editorial illustration, not a benchmark output.</sub></p>
+
+## Interactive Sol Ultra model
+
+The page now includes a live Three.js view of the highest-scoring scene. This is an optimized presentation derivative, not a replacement for the original benchmark artifact. The `.blend`, generated builder and final render remain untouched.
+
+The source scene made the optimization choice fairly clear. It was already a textureless, flat-color low-poly build. The expensive part was not geometry; it was asking the browser to draw hundreds of separate objects and materials.
+
+| Asset property | Source scene | Web derivative |
+|---|---:|---:|
+| Mesh objects or primitives | 707 | 4 |
+| Evaluated triangles | 51,031 | 50,763 |
+| Materials | 51 | 4 shader groups |
+| Image textures | 0 | one 256 px palette |
+| Binary size | 3.95 MB initial GLB | 579 KB optimized GLB |
+
+The build pipeline:
+
+1. Evaluates the 396 bevel modifiers so the browser receives the intended geometry.
+2. Removes the fixed-camera sky card, unsupported volume fog and two foreground crop trees.
+3. Maps every face to a precomputed 256 × 256 color palette instead of baking a large conventional texture.
+4. Merges the result into matte, metal, water and emissive primitives.
+5. Runs quantization, welding, pruning and Meshopt compression with glTF Transform.
+
+A 2K color bake or KTX2 texture would add payload and transcoder overhead without adding information to this particular model. The 2.3 KB PNG palette preserves the authored solid colors and provides the UV-backed atlas needed to collapse material state changes. This follows the spirit of the [Khronos real-time asset guidelines](https://github.com/KhronosGroup/3DC-Asset-Creation/blob/main/asset-creation-guidelines/RealtimeAssetCreationGuidelines.md) and Three.js's recommendation to use [glTF for runtime delivery](https://threejs.org/manual/en/loading-3d-models.html).
+
+The viewer is also intentionally restrained:
+
+- It keeps the WebP render as the initial poster and fallback.
+- Desktop loading begins only when the hero approaches the viewport.
+- Touch devices and save-data connections require an explicit “Explore in 3D” tap.
+- Orbit, pitch and zoom are bounded to the useful front hemisphere because the scene was authored for one camera.
+- Rendering is event-driven and pauses offscreen, following Three.js's [render-on-demand guidance](https://threejs.org/manual/en/rendering-on-demand.html).
+- Drawing resolution is capped by a pixel budget instead of blindly using the device's full pixel ratio.
+
+Rebuild the model and bundled viewer with Blender 5.0.1, Node.js and npm:
+
+```bash
+npm ci
+npm run build
+```
+
+The reproducible export is in [`scripts/build_web_model.py`](scripts/build_web_model.py), the viewer source is in [`src/hero-viewer.js`](src/hero-viewer.js), and the generated asset report is in [`site/assets/models/sol-ultra-diorama.json`](site/assets/models/sol-ultra-diorama.json).
 
 ## Repository layout
 
@@ -154,12 +196,17 @@ Sol xhigh is the best engineering balance in this set: five meaningful collectio
 ├── site/
 │   ├── index.html                 # Zero-build interactive article
 │   ├── app.js                     # Result data, filters, chart, dialogs
+│   ├── hero-viewer.js             # Bundled Three.js progressive enhancement
 │   ├── styles.css                 # Responsive editorial presentation
 │   ├── assets/data/benchmark.csv  # Audited benchmark data
+│   ├── assets/models/              # Optimized GLB, palette, build report
 │   ├── assets/renders/            # Web-optimized reference and renders
 │   ├── assets/social/             # Comparison and editorial visuals
 │   └── downloads/                 # Normalized .blend and script files
+├── src/hero-viewer.js             # Three.js source with bounded OrbitControls
+├── scripts/build_web_model.py     # Blender to palette-atlased GLB pipeline
 ├── scripts/validate.sh            # No-dependency repository checks
+├── package.json                   # Pinned Three.js and glTF build tools
 └── .github/workflows/validate.yml # CI validation
 ```
 

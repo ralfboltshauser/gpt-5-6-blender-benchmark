@@ -13,3 +13,7 @@ Thumbs.db
 *.swp
 *.swo
 *.log
+
+# Local JavaScript dependencies and generated debug output
+node_modules/
+*.js.map

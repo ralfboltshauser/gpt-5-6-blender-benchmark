@@ -5,9 +5,12 @@
 *.jpg binary
 *.jpeg binary
 *.webp binary
+*.glb binary
 
 *.py text eol=lf
 *.js text eol=lf
+*.mjs text eol=lf
+*.json text eol=lf
 *.css text eol=lf
 *.html text eol=lf
 *.md text eol=lf

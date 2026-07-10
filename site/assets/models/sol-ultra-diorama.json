@@ -1,0 +1,29 @@
+{
+  "source_file": "gpt-5.6-sol-ultra/cozy_forest_cabin.blend",
+  "source_mesh_objects": 695,
+  "source_materials_used": 48,
+  "web_meshes": 4,
+  "web_polygons_by_group": {
+    "matte": 26002,
+    "metal": 646,
+    "water": 8,
+    "emissive": 270
+  },
+  "palette": {
+    "file": "sol-ultra-palette.png",
+    "size": [
+      256,
+      256
+    ],
+    "columns": 8,
+    "rows": 6
+  },
+  "excluded": [
+    "Peach sunset sky",
+    "Subtle atmospheric volume",
+    "Near left crop pine",
+    "Near right crop pine"
+  ],
+  "unoptimized_glb_bytes": 3948468,
+  "optimized_glb_bytes": 578800
+}
