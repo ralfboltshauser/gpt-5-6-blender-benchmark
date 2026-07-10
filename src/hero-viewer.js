@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 
 
@@ -17,22 +16,23 @@ function drawingPixelRatio(width, height) {
 }
 
 
-function updateStatus(host, message) {
+function updateStatus(host, message, announce) {
   const status = host.querySelector("[data-viewer-status]");
-  if (status) status.textContent = message;
+  if (!status) return;
+  status.setAttribute("aria-live", announce ? "polite" : "off");
+  status.textContent = message;
 }
 
 
-export async function mountHeroViewer(host) {
-  if (!host || host.dataset.viewerMounted === "true") return;
+export async function mountHeroViewer(host, { announce = false } = {}) {
+  if (!host || host.dataset.viewerMounted === "true") return null;
   host.dataset.viewerMounted = "true";
-  host.dataset.state = "loading";
-  updateStatus(host, "Loading 3D scene");
+  host.dataset.load = "loading";
+  updateStatus(host, "Loading interactive 3D preview", announce);
 
   const canvasMount = host.querySelector("[data-viewer-canvas]");
-  const resetButton = host.querySelector("[data-viewer-reset]");
+  const toolbar = host.querySelector("[data-viewer-toolbar]");
   const modelUrl = host.dataset.model;
-  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const coarsePointer = matchMedia("(pointer: coarse)").matches;
 
   let renderer;
@@ -44,9 +44,10 @@ export async function mountHeroViewer(host) {
       powerPreference: "high-performance",
     });
   } catch (error) {
-    host.dataset.state = "fallback";
-    updateStatus(host, "Static preview");
-    return;
+    host.dataset.load = "failed";
+    host.dataset.viewerMounted = "false";
+    updateStatus(host, "Static preview. Interactive 3D is unavailable.", announce);
+    throw error;
   }
 
   const canvas = renderer.domElement;
@@ -56,17 +57,16 @@ export async function mountHeroViewer(host) {
 
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.AgXToneMapping;
-  renderer.toneMappingExposure = 0.92;
+  renderer.toneMappingExposure = 0.8;
   renderer.setClearColor(0x000000, 0);
 
-  const enableShadows = !coarsePointer || window.innerWidth >= 760;
-  renderer.shadowMap.enabled = enableShadows;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
-
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0xd9ad82, 0.0075);
+  scene.fog = new THREE.FogExp2(0xd2b39a, 0.003);
 
-  const camera = new THREE.PerspectiveCamera(26, 16 / 9, 0.1, 140);
+  // 55 mm on a 36 mm horizontal sensor at 16:9 is roughly a 20.7 degree
+  // vertical field of view. Matching the authored camera makes the poster-to-3D
+  // transition feel like the still image has become draggable.
+  const camera = new THREE.PerspectiveCamera(20.7, 16 / 9, 0.1, 140);
   camera.position.copy(INITIAL_CAMERA);
 
   const controls = new OrbitControls(camera, canvas);
@@ -74,151 +74,101 @@ export async function mountHeroViewer(host) {
   controls.enableDamping = true;
   controls.dampingFactor = 0.075;
   controls.enablePan = false;
-  controls.minDistance = 33;
-  controls.maxDistance = 49;
-  controls.minPolarAngle = 1.02;
-  controls.maxPolarAngle = 1.46;
-  controls.minAzimuthAngle = 0.08;
-  controls.maxAzimuthAngle = 1.14;
-  controls.rotateSpeed = 0.55;
-  controls.zoomSpeed = 0.75;
+  controls.enableZoom = false;
+  controls.enabled = false;
+  controls.minDistance = 34;
+  controls.maxDistance = 48;
+  controls.minPolarAngle = 1.06;
+  controls.maxPolarAngle = 1.44;
+  controls.minAzimuthAngle = 0.24;
+  controls.maxAzimuthAngle = 0.97;
+  controls.rotateSpeed = 0.5;
+  controls.zoomSpeed = 0.7;
   controls.update();
-
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const room = new RoomEnvironment();
-  const environmentTarget = pmrem.fromScene(room, 0.04);
-  scene.environment = environmentTarget.texture;
-  room.traverse((object) => {
-    if (object.geometry) object.geometry.dispose();
-    if (object.material) object.material.dispose();
-  });
-  pmrem.dispose();
-
-  const hemisphere = new THREE.HemisphereLight(0xffdfbf, 0x344b3d, 1.1);
-  scene.add(hemisphere);
-
-  const key = new THREE.DirectionalLight(0xffc58f, 3.2);
-  key.position.set(-13, 24, 15);
-  key.target.position.copy(INITIAL_TARGET);
-  key.castShadow = enableShadows;
-  key.shadow.mapSize.set(coarsePointer ? 512 : 1024, coarsePointer ? 512 : 1024);
-  key.shadow.camera.left = -22;
-  key.shadow.camera.right = 22;
-  key.shadow.camera.top = 22;
-  key.shadow.camera.bottom = -22;
-  key.shadow.camera.near = 1;
-  key.shadow.camera.far = 70;
-  key.shadow.bias = -0.0003;
-  key.shadow.normalBias = 0.025;
-  scene.add(key, key.target);
-
-  const windowGlow = new THREE.PointLight(0xff7c2d, 16, 12, 2);
-  windowGlow.position.set(0.2, 3.0, 1.0);
-  scene.add(windowGlow);
 
   let width = 0;
   let height = 0;
   let frameRequest = 0;
   let isVisible = true;
+  let viewActive = false;
   let disposed = false;
-  let userInteracted = false;
-  let introEnd = 0;
-  let shadowFrames = enableShadows ? 2 : 0;
 
   function resize() {
     const bounds = canvasMount.getBoundingClientRect();
     const nextWidth = Math.max(1, Math.round(bounds.width));
     const nextHeight = Math.max(1, Math.round(bounds.height));
-    if (nextWidth === width && nextHeight === height) return;
+    if (nextWidth === width && nextHeight === height) return false;
     width = nextWidth;
     height = nextHeight;
     renderer.setPixelRatio(drawingPixelRatio(width, height));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    return true;
   }
 
-  function renderFrame(time = performance.now()) {
+  function renderFrame() {
     frameRequest = 0;
-    if (disposed || !isVisible || document.hidden) return;
+    if (disposed || !viewActive || !isVisible || document.hidden) return;
     resize();
-    const introActive = !userInteracted && time < introEnd;
-    controls.autoRotate = introActive;
-    controls.autoRotateSpeed = 0.22;
-    const controlsChanged = controls.update(introActive ? 1 / 60 : undefined);
+    const controlsChanged = controls.update();
     renderer.render(scene, camera);
-    if (shadowFrames > 0) {
-      shadowFrames -= 1;
-      if (shadowFrames === 0) renderer.shadowMap.autoUpdate = false;
-    }
-    if (introActive || controlsChanged) requestRender();
+    if (controlsChanged) requestRender();
   }
 
   function requestRender() {
-    if (!frameRequest && isVisible && !document.hidden && !disposed) {
+    if (!frameRequest && viewActive && isVisible && !document.hidden && !disposed) {
       frameRequest = requestAnimationFrame(renderFrame);
     }
   }
 
-  function stopIntro() {
-    userInteracted = true;
-    controls.autoRotate = false;
-  }
-
   controls.addEventListener("change", requestRender);
-  canvas.addEventListener("pointerdown", stopIntro, { passive: true });
-  canvas.addEventListener("wheel", stopIntro, { passive: true });
 
-  const resizeObserver = new ResizeObserver(requestRender);
+  const resizeObserver = new ResizeObserver(() => {
+    if (viewActive) requestRender();
+  });
   resizeObserver.observe(canvasMount);
 
   const visibilityObserver = new IntersectionObserver((entries) => {
     isVisible = entries[0].isIntersecting;
-    if (isVisible) requestRender();
+    if (isVisible && viewActive) requestRender();
   }, { rootMargin: "100px" });
   visibilityObserver.observe(host);
 
   const onVisibilityChange = () => {
-    if (!document.hidden) requestRender();
+    if (!document.hidden && viewActive) requestRender();
   };
   document.addEventListener("visibilitychange", onVisibilityChange);
 
   const onContextLost = (event) => {
     event.preventDefault();
-    host.dataset.state = "fallback";
-    updateStatus(host, "Static preview");
+    host.dataset.load = "failed";
+    host.dataset.view = "poster";
+    host.dispatchEvent(new CustomEvent("viewer-error"));
+    updateStatus(host, "Static preview. The 3D context was lost.", true);
   };
   canvas.addEventListener("webglcontextlost", onContextLost);
-
-  const resetView = () => {
-    stopIntro();
-    camera.position.copy(INITIAL_CAMERA);
-    controls.target.copy(INITIAL_TARGET);
-    controls.update();
-    requestRender();
-  };
-  resetButton?.addEventListener("click", resetView);
 
   try {
     const loader = new GLTFLoader();
     loader.setMeshoptDecoder(MeshoptDecoder);
     const gltf = await loader.loadAsync(modelUrl, (event) => {
-      if (!event.total) return;
+      if (!event.total || !announce) return;
       const percent = Math.min(99, Math.round((event.loaded / event.total) * 100));
-      updateStatus(host, `Loading 3D scene · ${percent}%`);
+      updateStatus(host, `Loading interactive 3D preview · ${percent}%`, true);
     });
 
     const model = gltf.scene;
-    model.name = "GPT-5.6 Sol Ultra web diorama";
+    model.name = "GPT-5.6 Sol Ultra baked web diorama";
     model.traverse((object) => {
       if (!object.isMesh) return;
-      object.castShadow = enableShadows && !object.name.toLowerCase().includes("water");
-      object.receiveShadow = enableShadows;
       const materials = Array.isArray(object.material) ? object.material : [object.material];
       materials.forEach((material) => {
-        material.envMapIntensity = material.name.includes("Metal") ? 0.55 : 0.25;
-        const texture = material.map;
-        if (texture) texture.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
+        material.fog = true;
+        material.toneMapped = true;
+        if (material.map) {
+          material.map.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
+        }
       });
     });
     scene.add(model);
@@ -227,26 +177,44 @@ export async function mountHeroViewer(host) {
       if (object !== model) object.matrixAutoUpdate = false;
     });
 
+    // Compile shaders and upload both baked textures while the poster is still
+    // opaque. The first hover therefore reveals a complete frame, not a pop-in.
     resize();
     renderer.compile(scene, camera);
     renderer.render(scene, camera);
-    introEnd = reducedMotion ? 0 : performance.now() + 2400;
-    host.dataset.state = "ready";
-    updateStatus(host, "Interactive 3D scene ready");
-    requestRender();
+    host.dataset.load = "ready";
+    updateStatus(host, "Interactive 3D preview ready", announce);
   } catch (error) {
-    host.dataset.state = "fallback";
-    updateStatus(host, "Static preview");
-    console.warn("The 3D hero could not be loaded.", error);
+    host.dataset.load = "failed";
+    host.dataset.view = "poster";
+    host.dataset.viewerMounted = "false";
+    updateStatus(host, "Static preview. Interactive 3D could not be loaded.", announce);
+    disposeViewer();
+    throw error;
   }
 
-  return function disposeViewer() {
+  function setView(view) {
+    viewActive = view === "preview" || view === "pinned";
+    controls.enabled = viewActive;
+    controls.enableZoom = view === "pinned";
+    canvasMount.inert = !viewActive;
+    if (toolbar) toolbar.inert = !viewActive;
+    if (viewActive) requestRender();
+  }
+
+  function resetView() {
+    camera.position.copy(INITIAL_CAMERA);
+    controls.target.copy(INITIAL_TARGET);
+    controls.update();
+    requestRender();
+  }
+
+  function disposeViewer() {
     disposed = true;
     if (frameRequest) cancelAnimationFrame(frameRequest);
     resizeObserver.disconnect();
     visibilityObserver.disconnect();
     document.removeEventListener("visibilitychange", onVisibilityChange);
-    resetButton?.removeEventListener("click", resetView);
     controls.dispose();
     scene.traverse((object) => {
       if (object.geometry) object.geometry.dispose();
@@ -260,8 +228,9 @@ export async function mountHeroViewer(host) {
         material.dispose();
       });
     });
-    environmentTarget.dispose();
     renderer.dispose();
     canvas.remove();
-  };
+  }
+
+  return { canvas, setView, resetView, disposeViewer };
 }

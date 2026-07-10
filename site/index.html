@@ -58,19 +58,23 @@
           </figure>
           <div class="comparison-arrow" aria-hidden="true">→</div>
           <figure>
-            <div class="image-frame model-stage" data-model-viewer data-model="assets/models/sol-ultra-diorama.glb" data-state="poster" data-manual="false" role="group" aria-label="Interactive 3D preview of the Sol Ultra Blender scene">
+            <div class="image-frame model-stage" data-model-viewer data-model="assets/models/sol-ultra-diorama.glb" data-load="idle" data-view="poster" data-manual="false" role="group" aria-label="Sol Ultra render with an optional interactive 3D preview">
               <img class="model-poster" src="assets/renders/gpt-5-6-sol-ultra.webp" alt="Sol Ultra output: a detailed low-poly cabin, path, props and forest" width="1600" height="900">
-              <div class="model-canvas-mount" data-viewer-canvas aria-hidden="true"></div>
+              <div class="model-canvas-mount" data-viewer-canvas aria-hidden="true" inert></div>
               <div class="model-loading" aria-hidden="true"><span></span></div>
-              <button class="model-launch" type="button" data-viewer-launch>Explore in 3D <span>↗</span></button>
-              <div class="model-toolbar">
+              <button class="model-launch" type="button" data-viewer-launch><span data-viewer-launch-label>Explore in 3D</span><span aria-hidden="true">↗</span></button>
+              <div class="model-toolbar" data-viewer-toolbar inert>
                 <span class="model-live"><i aria-hidden="true"></i>Live 3D</span>
-                <button type="button" data-viewer-reset>Reset view</button>
+                <div class="model-toolbar-actions">
+                  <button type="button" data-viewer-poster>Show image</button>
+                  <button type="button" data-viewer-reset>Reset view</button>
+                </div>
               </div>
-              <p class="model-hint">Drag to orbit <span>·</span> Pinch or scroll to zoom</p>
-              <p class="sr-only" aria-live="polite" data-viewer-status>Static preview</p>
+              <p class="model-hint model-hint-preview">Drag to orbit <span>·</span> Interact to keep open</p>
+              <p class="model-hint model-hint-pinned">Drag to orbit <span>·</span> Pinch or scroll to zoom</p>
+              <p class="sr-only" aria-live="off" data-viewer-status>Static preview</p>
             </div>
-            <figcaption><span>Highest visual score · Interactive</span><strong>GPT‑5.6 Sol · Ultra</strong></figcaption>
+            <figcaption><span>Highest visual score · Interactive 3D available</span><strong>GPT‑5.6 Sol · Ultra</strong></figcaption>
           </figure>
         </div>
         <p class="hero-caption">Sol Ultra scored two points above Sol xhigh while using 3.47× the tokens and 3.25× the time.</p>
@@ -123,7 +127,7 @@
         </div>
 
         <div class="gallery shell" id="gallery"></div>
-        <noscript><p class="shell noscript">JavaScript is used only to render the comparison cards. All images and data are also available in the downloadable CSV.</p></noscript>
+        <noscript><p class="shell noscript">JavaScript enables the comparison cards and optional 3D preview. All benchmark images and data remain available in the downloadable CSV.</p></noscript>
       </section>
 
       <section class="section shell" id="scoreboard">
