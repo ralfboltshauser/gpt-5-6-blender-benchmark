@@ -278,8 +278,7 @@ renderChart();
 
 function setupPromptCycle() {
   const cycle = document.querySelector("[data-run-cycle]");
-  const card = cycle?.closest(".prompt-card");
-  if (!cycle || !card) return;
+  if (!cycle) return;
 
   const labels = runs
     .slice()
@@ -314,12 +313,10 @@ function setupPromptCycle() {
   };
   const start = () => {
     if (reducedMotion.matches || timer || document.hidden) return;
-    timer = window.setInterval(() => update(true), 1900);
+    timer = window.setInterval(() => update(true), 1100);
   };
 
   update(false);
-  card.addEventListener("pointerenter", stop);
-  card.addEventListener("pointerleave", start);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) stop();
     else start();
