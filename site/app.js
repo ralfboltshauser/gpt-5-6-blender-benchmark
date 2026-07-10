@@ -406,7 +406,7 @@ function setupHeroViewer() {
         if (!viewer) throw new Error("The 3D viewer did not initialize.");
         controller = viewer;
         launchButton.disabled = false;
-        setLaunchLabel("Explore in 3D");
+        setLaunchLabel("Open 3D scene");
         if (pinned) setView("pinned");
         else if (pointerInside && !suppressHover) setView("preview");
         else setView("poster");
@@ -456,6 +456,10 @@ function setupHeroViewer() {
   launchButton.addEventListener("click", pinViewer);
   resetButton.addEventListener("click", () => controller?.resetView());
   showImageButton.addEventListener("click", showPoster);
+  host.addEventListener("click", event => {
+    if (event.target.closest("button") || host.dataset.view !== "poster") return;
+    pinViewer(event);
+  });
 
   host.addEventListener("pointerenter", () => {
     if (!hoverPreview) return;
