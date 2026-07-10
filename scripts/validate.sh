@@ -52,9 +52,40 @@ while IFS= read -r dir; do
   [[ "$renders" == "1" ]] || fail "$dir should contain exactly one final render"
 done < <(find . -maxdepth 1 -mindepth 1 -type d -name 'gpt-*' | sort)
 
-read -r total_duration total_tokens < <(
-  awk -F, 'NR > 1 { duration += $5; tokens += $6 } END { print duration, tokens }' site/assets/data/benchmark.csv
-)
+if ! audited_totals=$(awk -F, '
+  NR == 1 {
+    for (column = 1; column <= NF; column++) col[$column] = column
+    required[1] = "weighted_score"
+    required[2] = "geometry_score"
+    required[3] = "composition_score"
+    required[4] = "finish_score"
+    required[5] = "input_accuracy_score"
+    required[6] = "duration_ms"
+    required[7] = "total_tokens"
+    for (item in required) if (!(required[item] in col)) invalid = 1
+    next
+  }
+  NR > 1 {
+    total = $(col["weighted_score"])
+    geometry = $(col["geometry_score"])
+    composition = $(col["composition_score"])
+    finish = $(col["finish_score"])
+    accuracy = $(col["input_accuracy_score"])
+    if (geometry < 0 || geometry > 40 || composition < 0 || composition > 25 || finish < 0 || finish > 20 || accuracy < 0 || accuracy > 15 || total != geometry + composition + finish + accuracy) {
+      printf "invalid weighted score on CSV row %d\n", NR > "/dev/stderr"
+      invalid = 1
+    }
+    duration += $(col["duration_ms"])
+    tokens += $(col["total_tokens"])
+  }
+  END {
+    if (invalid) exit 1
+    print duration, tokens
+  }
+' site/assets/data/benchmark.csv); then
+  fail "benchmark CSV rubric columns are missing or inconsistent"
+fi
+read -r total_duration total_tokens <<< "$audited_totals"
 [[ "$total_duration" == "11747554" ]] || fail "duration total changed: $total_duration"
 [[ "$total_tokens" == "24684392" ]] || fail "token total changed: $total_tokens"
 
