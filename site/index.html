@@ -13,7 +13,7 @@
   <meta property="og:image" content="https://blender-bench.ralfboltshauser.com/assets/social/og-card.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://blender-bench.ralfboltshauser.com/assets/social/og-card.png">
-  <title>Pixels to Polygons — GPT-5.6 Blender benchmark</title>
+  <title>Pixels to Polygons | GPT-5.6 Blender benchmark</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
   <script src="app.js" defer></script>
@@ -22,7 +22,7 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="topbar shell">
-    <a class="wordmark" href="#top" aria-label="Pixels to Polygons, back to top">
+    <a class="wordmark" href="#top" aria-label="Pixels → Polygons, back to top">
       <span class="wordmark-mark" aria-hidden="true"></span>
       Pixels → Polygons
     </a>
@@ -40,7 +40,7 @@
         <div class="eyebrow"><span>Independent field test</span><span>10 July 2026</span></div>
         <h1>One image in.<br>Fifteen Blender scenes out.</h1>
         <div class="hero-deck">
-          <p>Same cabin. Same one-line brief. Fourteen GPT‑5.6 configurations across Luna, Terra and Sol—plus GPT‑5.5 as a baseline.</p>
+          <p>Same cabin. Same one-line brief. Fourteen GPT‑5.6 configurations across Luna, Terra and Sol, plus GPT‑5.5 as a baseline.</p>
           <p class="hero-thesis">More thinking bought detail. It did not buy quality in a straight line.</p>
         </div>
 
@@ -58,18 +58,29 @@
           </figure>
           <div class="comparison-arrow" aria-hidden="true">→</div>
           <figure>
-            <div class="image-frame"><img src="assets/renders/gpt-5-6-sol-ultra.webp" alt="Sol Ultra output: a detailed low-poly cabin, path, props and forest" width="1600" height="900"></div>
-            <figcaption><span>Highest visual score · 79/100</span><strong>GPT‑5.6 Sol · Ultra</strong></figcaption>
+            <div class="image-frame model-stage" data-model-viewer data-model="assets/models/sol-ultra-diorama.glb" data-state="poster" data-manual="false" role="group" aria-label="Interactive 3D preview of the Sol Ultra Blender scene">
+              <img class="model-poster" src="assets/renders/gpt-5-6-sol-ultra.webp" alt="Sol Ultra output: a detailed low-poly cabin, path, props and forest" width="1600" height="900">
+              <div class="model-canvas-mount" data-viewer-canvas aria-hidden="true"></div>
+              <div class="model-loading" aria-hidden="true"><span></span></div>
+              <button class="model-launch" type="button" data-viewer-launch>Explore in 3D <span>↗</span></button>
+              <div class="model-toolbar">
+                <span class="model-live"><i aria-hidden="true"></i>Live 3D</span>
+                <button type="button" data-viewer-reset>Reset view</button>
+              </div>
+              <p class="model-hint">Drag to orbit <span>·</span> Pinch or scroll to zoom</p>
+              <p class="sr-only" aria-live="polite" data-viewer-status>Static preview</p>
+            </div>
+            <figcaption><span>Highest visual score · Interactive</span><strong>GPT‑5.6 Sol · Ultra</strong></figcaption>
           </figure>
         </div>
-        <p class="hero-caption">The winner was close. Sol Ultra scored two points above Sol xhigh while using 3.47× the tokens and 3.25× the time.</p>
+        <p class="hero-caption">Sol Ultra scored two points above Sol xhigh while using 3.47× the tokens and 3.25× the time.</p>
       </header>
 
       <section class="section shell" id="setup">
         <div class="section-heading">
           <p class="section-index">01 / Setup</p>
           <h2>A deliberately under-specified test.</h2>
-          <p>The models received a picture—not a scene graph, asset pack, or modeling recipe. The folder name was the only variable in the prompt.</p>
+          <p>The models received a picture, not a scene graph, asset pack, or modeling recipe. The folder name was the only variable in the prompt.</p>
         </div>
 
         <div class="setup-grid">
@@ -157,21 +168,21 @@
         <div class="shell">
           <div class="section-heading">
             <p class="section-index">04 / Findings</p>
-            <h2>The useful answer is not “use the biggest model.”</h2>
+            <h2>Model size did not predict the best choice.</h2>
           </div>
 
           <div class="finding-list">
             <article class="finding">
               <p class="finding-number">01</p>
-              <div><h3>Ultra won the image. xhigh won the argument.</h3><p>Sol Ultra was the closest reconstruction at 79/100. Sol xhigh reached 77 with 29% of the tokens and 31% of the time. That last two-point gain cost 6.74M extra tokens and 36 minutes.</p></div>
+              <div><h3>Sol Ultra led on fidelity. Sol xhigh was more efficient.</h3><p>Sol Ultra was the closest reconstruction at 79/100. Sol xhigh reached 77 with 29% of the tokens and 31% of the time. That last two-point gain cost 6.74M extra tokens and 36 minutes.</p></div>
             </article>
             <article class="finding">
               <p class="finding-number">02</p>
-              <div><h3>Sol Light was the value surprise.</h3><p>At 665K tokens and 5:12, it scored 66—sixth overall—and beat nine configurations, including multiple medium and high runs. Its 167-line script brute-forced 566 mesh objects but composed them well.</p></div>
+              <div><h3>Sol Light delivered the best value.</h3><p>At 665K tokens and 5:12, it scored 66, placed sixth overall and beat nine configurations, including multiple medium and high runs. Its 167-line script brute-forced 566 mesh objects but composed them well.</p></div>
             </article>
             <article class="finding">
               <p class="finding-number">03</p>
-              <div><h3>Thinking effort was visibly non-monotonic.</h3><p>Sol medium and high broke their roof geometry. Terra xhigh outscored Terra Ultra. Luna xhigh spent 2.9× the tokens of Luna High for one visual point. More search created more opportunity—and more ways to go wrong.</p></div>
+              <div><h3>Thinking effort was visibly non-monotonic.</h3><p>Sol medium and high broke their roof geometry. Terra xhigh outscored Terra Ultra. Luna xhigh spent 2.9× the tokens of Luna High for one visual point. Higher effort also introduced more failure modes.</p></div>
             </article>
             <article class="finding">
               <p class="finding-number">04</p>
@@ -194,7 +205,7 @@
           <article><span>01</span><h3>Coherent geometry</h3><p>The best runs modeled a continuous terrain, a tapered path and a dimensionally coherent gable. Weak runs stacked decorative slabs until they looked roof-like.</p></article>
           <article><span>02</span><h3>Composition before detail</h3><p>Path, fence, woodpile, foreground trees and mountain layers mattered more than raw polygon count. Terra xhigh used the most objects; Sol Ultra still scored higher with fewer.</p></article>
           <article><span>03</span><h3>Lighting hierarchy</h3><p>Warm local window lights, a broad key and cooler environmental fill created depth. A single orange wash made even detailed scenes read flat.</p></article>
-          <article><span>04</span><h3>Recovery mattered</h3><p>All 15 runs shipped, despite most GPT‑5.6 agents first using a stale Eevee engine enum. The chat histories show diagnosis, patching and re-rendering—not one-shot code generation.</p></article>
+          <article><span>04</span><h3>Recovery mattered</h3><p>All 15 runs shipped, despite most GPT‑5.6 agents first using a stale Eevee engine enum. The chat histories show diagnosis, patching and re-rendering, not one-shot code generation.</p></article>
         </div>
 
         <div class="engineering-callout">
@@ -223,7 +234,7 @@
         <div class="section-heading split-heading">
           <div>
             <p class="section-index">07 / Method & caveats</p>
-            <h2>What this test can—and cannot—say.</h2>
+            <h2>What this test can and cannot say.</h2>
           </div>
           <p>The raw renders, editable scenes, generated scripts and machine-readable data ship with this page.</p>
         </div>

@@ -59,7 +59,7 @@ const runs = [
     objects: 361, meshes: 358, polygons: 3090, lines: 101, dimensions: "900 × 700",
     verdict: "Fast and feature-rich, but the framing hides its work.",
     note: "An enormous foreground tree obscures the cabin. The narrow frame, stacked roof strips, crushed shadows and orange-heavy grade make the scene difficult to read.",
-    engineering: "Surprisingly complete in 101 lines—path, logs, shingles, mountains, forest and depth of field—but it uses object-only cleanup, dense one-line loops and weak local lighting.",
+    engineering: "Surprisingly complete in 101 lines, including a path, logs, shingles, mountains, forest and depth of field. It still uses object-only cleanup, dense one-line loops and weak local lighting.",
     alt: "Terra Medium output with a large foreground pine obscuring a small cabin"
   },
   {
@@ -95,7 +95,7 @@ const runs = [
     objects: 569, meshes: 566, polygons: 5496, lines: 167, dimensions: "1000 × 563",
     verdict: "The value surprise: sixth visually at light effort.",
     note: "The cabin is clean and well staged with chimney, porch, path, forest and foreground props. A plain roof, coarse materials and globally orange lighting leave distance to the reference.",
-    engineering: "A correct reset and only 167 lines generate 566 meshes—logs, shingles, path stones, grass, mountains, props and porch. It is compressed brute force, with only two area lights and high exposure.",
+    engineering: "A correct reset and only 167 lines generate 566 meshes across logs, shingles, path stones, grass, mountains, props and porch. It is compressed brute force, with only two area lights and high exposure.",
     alt: "Sol Light output showing a clean warmly lit cabin, path and foreground logs"
   },
   {
@@ -129,7 +129,7 @@ const runs = [
     slug: "gpt-5-6-sol-ultra", family: "sol", familyLabel: "Sol", name: "Sol · Ultra", effort: "ultra",
     score: 79, duration: 3151862, tokens: 9465944, input: 9381999, cached: 8944896, output: 83945, reasoning: 31441, tools: 142,
     objects: 717, meshes: 707, polygons: 8164, lines: 1129, dimensions: "1600 × 900",
-    verdict: "Best overall semantic match—and by far the most expensive run.",
+    verdict: "Best overall semantic match, and by far the most expensive run.",
     note: "It captures the steep roof, coherent chimney and porch, path, fence, lantern, stump, axe, logs, rocks, mushrooms and dense trees. Material richness, mountain atmosphere and golden-hour depth still trail the source.",
     engineering: "The most ambitious system: ten collections, jittered terrain, path, water, haze, layered mountains, segmented walls, 112 shingles and renderer tuning. Five child agents contributed to 142 tool calls; rerun cleanup and portability remain imperfect.",
     alt: "Sol Ultra output showing the benchmark's most complete low-poly cabin, path, props and forest"
@@ -152,9 +152,10 @@ const formatNumber = value => new Intl.NumberFormat("en-US").format(value);
 function renderGallery() {
   gallery.innerHTML = runs.map(run => `
     <article class="result-card" data-family="${run.family}">
-      <button class="result-open" type="button" data-slug="${run.slug}" aria-label="Open details for ${run.name}">
+      <button class="result-open" type="button" data-slug="${run.slug}">
+        <span class="sr-only">Open details for </span>
         <div class="result-image">
-          <img src="assets/renders/${run.slug}.webp" alt="${run.alt}" loading="lazy" decoding="async">
+          <img src="assets/renders/${run.slug}.webp" alt="" loading="lazy" decoding="async">
           <span class="score-chip">${run.score}/100</span>
         </div>
         <div class="result-title-row">
@@ -242,7 +243,7 @@ function renderChart() {
   const points = runs.map(run => {
     const [dx, dy] = labelOffsets[run.slug] || [9, -8];
     return `
-      <g role="button" tabindex="0" data-chart-slug="${run.slug}" aria-label="${run.name}: score ${run.score}, ${formatTokens(run.tokens)} tokens">
+      <g role="button" tabindex="0" data-chart-slug="${run.slug}" aria-label="${abbreviation(run)}" aria-description="${run.name}: score ${run.score}, ${formatTokens(run.tokens)} tokens">
         <circle class="chart-point" cx="${x(run.tokens)}" cy="${y(run.score)}" r="6" fill="${familyColors[run.family]}"><title>${run.name}: ${run.score}/100 · ${formatTokens(run.tokens)} tokens</title></circle>
         <text class="chart-point-label" x="${x(run.tokens) + dx}" y="${y(run.score) + dy}">${abbreviation(run)}</text>
       </g>
@@ -302,3 +303,41 @@ document.querySelector("#copy-prompt").addEventListener("click", async event => 
     event.currentTarget.textContent = "Select the prompt above";
   }
 });
+
+function setupHeroViewer() {
+  const host = document.querySelector("[data-model-viewer]");
+  if (!host) return;
+  const launchButton = host.querySelector("[data-viewer-launch]");
+  const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  const manualStart = matchMedia("(pointer: coarse)").matches || Boolean(connection?.saveData);
+  host.dataset.manual = String(manualStart);
+
+  let started = false;
+  const start = async () => {
+    if (started) return;
+    started = true;
+    launchButton.disabled = true;
+    launchButton.firstChild.textContent = "Loading 3D ";
+    try {
+      const { mountHeroViewer } = await import("./hero-viewer.js");
+      await mountHeroViewer(host);
+    } catch (error) {
+      host.dataset.state = "fallback";
+      launchButton.disabled = false;
+      launchButton.firstChild.textContent = "Static preview ";
+      console.warn("The 3D viewer module could not be loaded.", error);
+    }
+  };
+
+  launchButton.addEventListener("click", start);
+  if (manualStart) return;
+
+  const loadObserver = new IntersectionObserver((entries) => {
+    if (!entries[0].isIntersecting) return;
+    loadObserver.disconnect();
+    start();
+  }, { rootMargin: "500px" });
+  loadObserver.observe(host);
+}
+
+setupHeroViewer();

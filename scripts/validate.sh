@@ -15,6 +15,16 @@ count_files() {
 
 command -v node >/dev/null 2>&1 || fail "Node.js is required"
 node --check site/app.js
+node --check site/hero-viewer.js
+
+[[ -s site/assets/models/sol-ultra-diorama.glb ]] || fail "optimized Sol Ultra web model is missing"
+model_bytes=$(wc -c < site/assets/models/sol-ultra-diorama.glb | tr -d ' ')
+(( model_bytes < 750000 )) || fail "optimized web model exceeds 750 KB: $model_bytes bytes"
+[[ -s site/assets/models/sol-ultra-palette.png ]] || fail "Sol Ultra palette atlas is missing"
+
+if grep -R -n $'\u2014' README.md site --include='*.html' --include='*.css' --include='*.js' --include='*.md'; then
+  fail "published copy contains an em dash"
+fi
 
 model_dirs=$(find . -maxdepth 1 -mindepth 1 -type d -name 'gpt-*' | wc -l | tr -d ' ')
 [[ "$model_dirs" == "15" ]] || fail "expected 15 model folders, found $model_dirs"
