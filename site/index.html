@@ -7,7 +7,7 @@
   <meta name="description" content="A controlled Blender benchmark of GPT-5.6 Luna, Terra, and Sol across 14 model-effort configurations, plus a GPT-5.5 baseline.">
   <link rel="canonical" href="https://blender-bench.ralfboltshauser.com/">
   <meta property="og:title" content="One image in. Fifteen Blender scenes out.">
-  <meta property="og:description" content="Same image, same one-line brief: a field test of GPT-5.6's Blender capabilities.">
+  <meta property="og:description" content="A geometry-first field test of GPT-5.6 Blender capability. Sol Ultra won with the most logical, composed and visually rich scene.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://blender-bench.ralfboltshauser.com/">
   <meta property="og:image" content="https://blender-bench.ralfboltshauser.com/assets/social/og-card.png">
@@ -86,7 +86,7 @@
             <figcaption><span><b class="model-caption-badge">3D</b> Hover or tap to enter the scene</span><strong>GPT‑5.6 Sol · Ultra</strong></figcaption>
           </figure>
         </div>
-        <p class="hero-caption">Sol Ultra scored two points above Sol xhigh while using 3.47× the tokens and 3.25× the time.</p>
+        <p class="hero-caption">Sol Ultra won the geometry-first benchmark by seven points. Sol xhigh used 29% of its tokens and 31% of its time.</p>
       </header>
 
       <section class="section shell" id="setup">
@@ -144,34 +144,45 @@
         <div class="section-heading split-heading">
           <div>
             <p class="section-index">03 / Scoreboard</p>
-            <h2>Quality versus spend.</h2>
+            <h2>Geometry first. Then the image.</h2>
           </div>
-          <p>Visual scores are human judgments anchored to the reference at 100. Tokens include the marginal usage of subagents where spawned.</p>
+          <p>The weighted score adds four manual ratings in priority order. Structural failures receive the largest penalty, while resemblance is deliberately the smallest component.</p>
         </div>
+
+        <div class="rubric-grid" aria-label="Weighted benchmark rubric">
+          <article><span>40 points</span><h3>Geometric logic</h3><p>Coherent roof, shell and foundation; grounded objects; clean attachments; no unintended intersections or hovering parts.</p></article>
+          <article><span>25 points</span><h3>Composition</h3><p>Readable hierarchy, framing, camera, leading path, balance, useful occlusion and layered scene depth.</p></article>
+          <article><span>20 points</span><h3>Visual finish</h3><p>Lighting hierarchy, exposure, color depth, material readability, atmosphere and overall beauty.</p></article>
+          <article><span>15 points</span><h3>Input match</h3><p>Cabin proportions, scene contents, camera, forest, path, props, palette and mood relative to the reference.</p></article>
+        </div>
+        <p class="rubric-note">Total = 40 + 25 + 20 + 15. Ties break in that same order, beginning with geometry.</p>
 
         <div class="value-chart-wrap">
           <div class="chart-header">
-            <p class="card-label">Visual score vs. reported tokens</p>
+            <p class="card-label">Weighted score vs. reported tokens</p>
             <div class="legend" aria-label="Chart legend"><span class="dot luna"></span>Luna <span class="dot terra"></span>Terra <span class="dot sol"></span>Sol <span class="dot baseline"></span>5.5</div>
           </div>
-          <svg id="value-chart" role="img" aria-label="Scatter plot comparing token usage and visual score for each run"></svg>
+          <svg id="value-chart" role="img" aria-label="Scatter plot comparing token usage and weighted benchmark score for each run"></svg>
         </div>
 
         <div class="table-toolbar">
           <p>Click a row for the detailed audit.</p>
           <label for="sort-results">Sort by
             <select id="sort-results">
-              <option value="score-desc">Visual score</option>
+              <option value="score-desc">Weighted score</option>
+              <option value="geometry-desc">Geometry</option>
+              <option value="composition-desc">Composition</option>
+              <option value="finish-desc">Visual finish</option>
+              <option value="accuracy-desc">Input match</option>
               <option value="tokens-asc">Fewest tokens</option>
               <option value="time-asc">Fastest</option>
-              <option value="objects-desc">Scene objects</option>
             </select>
           </label>
         </div>
         <div class="table-scroll">
           <table>
             <thead>
-              <tr><th scope="col">Run</th><th scope="col">Visual</th><th scope="col">Time</th><th scope="col">Tokens</th><th scope="col">Objects</th><th scope="col">Script</th></tr>
+              <tr><th scope="col">Run</th><th scope="col">Total</th><th scope="col">Geometry</th><th scope="col">Composition</th><th scope="col">Finish</th><th scope="col">Match</th><th scope="col">Time</th><th scope="col">Tokens</th></tr>
             </thead>
             <tbody id="scoreboard-body"></tbody>
           </table>
@@ -182,37 +193,41 @@
         <div class="shell">
           <div class="section-heading">
             <p class="section-index">04 / Findings</p>
-            <h2>The score is only half the result.</h2>
-            <p>The benchmark measures renders, tokens and time. The larger shift is in the workflow required to get a credible scene out of the model.</p>
+            <h2>What wins when geometry comes first.</h2>
+            <p>The revised ranking rewards scenes that make physical sense before judging framing, beauty and resemblance.</p>
           </div>
 
           <div class="finding-list">
             <article class="finding">
               <p class="finding-number">01</p>
-              <div><h3>Sol Ultra led on fidelity. Sol xhigh was more efficient.</h3><p>Sol Ultra was the closest reconstruction at 79/100. Sol xhigh reached 77 with 29% of the tokens and 31% of the time. That last two-point gain cost 6.74M extra tokens and 36 minutes.</p></div>
+              <div><h3>Sol Ultra is the clear winner.</h3><p>It scored 92/100: 38 geometry, 24 composition, 17 visual finish and 13 input match. Sol xhigh reached 85 with 29% of the tokens and 31% of the time, but its flatter amber-olive palette and shallower depth create a visible seven-point gap.</p></div>
             </article>
             <article class="finding">
               <p class="finding-number">02</p>
-              <div><h3>Sol Light delivered the best value.</h3><p>At 665K tokens and 5:12, it scored 66, placed sixth overall and beat nine configurations, including multiple medium and high runs. Its 167-line script brute-forced 566 mesh objects but composed them well.</p></div>
+              <div><h3>The geometry-first rubric changes the podium.</h3><p>GPT‑5.5 xhigh rises to third because its cabin scores 37/40 for structural logic, despite weaker framing. Terra xhigh lands fourth because crossed braces and protruding roof beams cost geometry points. Terra Ultra falls to seventh because its otherwise attractive house visibly floats above the terrain.</p></div>
             </article>
             <article class="finding">
               <p class="finding-number">03</p>
-              <div><h3>Thinking effort was visibly non-monotonic.</h3><p>Sol medium and high broke their roof geometry. Terra xhigh outscored Terra Ultra. Luna xhigh spent 2.9× the tokens of Luna High for one visual point. Higher effort also introduced more failure modes.</p></div>
+              <div><h3>Sol Light delivered the best value.</h3><p>At 665K tokens and 5:12, it scored 75, placed fifth overall and beat ten configurations. Its roof and cabin remain coherent while many more expensive runs spend detail on scenes with broken primary geometry.</p></div>
             </article>
             <article class="finding">
               <p class="finding-number">04</p>
-              <div><h3>The benchmark is semantic reconstruction, not inverse graphics.</h3><p>None of the 15 scripts loaded, sampled, calibrated or measured the reference. The agents inferred “cozy low-poly cabin” and hand-built a plausible scene from primitives. That is impressive, but it is a different capability from recovering the pictured 3D scene.</p></div>
+              <div><h3>Thinking effort was visibly non-monotonic.</h3><p>Sol medium and high broke their roof assemblies. Terra xhigh scored 77 while Terra Ultra scored 70. Luna High reached 74, five points above Luna xhigh despite using roughly one-third of its tokens. More thinking raised the ceiling, but did not guarantee a more logical scene.</p></div>
             </article>
             <article class="finding">
               <p class="finding-number">05</p>
-              <div><h3>GPT‑5.6 raised the one-shot floor.</h3><p>The broken roof is a structural diagnostic, not a cosmetic detail. Earlier GPT‑5.5 workflows often needed steering when roof panels, rafters and gables separated. In this benchmark, some GPT‑5.6 runs, especially Sol Ultra, got the steep roof coherent in the first autonomous pass. One run per configuration is not a reliability study, but the practical baseline has clearly moved.</p></div>
+              <div><h3>The benchmark is semantic reconstruction, not inverse graphics.</h3><p>None of the 15 scripts loaded, sampled, calibrated or measured the reference. The agents inferred “cozy low-poly cabin” and hand-built a plausible scene from primitives. That is impressive, but it is a different capability from recovering the pictured 3D scene.</p></div>
             </article>
             <article class="finding">
               <p class="finding-number">06</p>
-              <div><h3>Ultra can critique the render, not only write the builder.</h3><p>Its visual feedback loop catches clipped objects, overlaps, lighting balance and whether the scene has the intended feeling. The important loop is geometry to rendered evidence to targeted correction, not simply more procedural detail.</p></div>
+              <div><h3>GPT‑5.6 raised the one-shot floor.</h3><p>The broken roof is a structural diagnostic, not a cosmetic detail. Earlier GPT‑5.5 workflows often needed steering when roof panels, rafters and gables separated. In this benchmark, some GPT‑5.6 runs, especially Sol Ultra, got the steep roof coherent in the first autonomous pass. One run per configuration is not a reliability study, but the practical baseline has clearly moved.</p></div>
             </article>
             <article class="finding">
               <p class="finding-number">07</p>
+              <div><h3>Ultra can critique the render, not only write the builder.</h3><p>Its visual feedback loop catches clipped objects, overlaps, lighting balance and whether the scene has the intended feeling. The important loop is geometry to rendered evidence to targeted correction, not simply more procedural detail.</p></div>
+            </article>
+            <article class="finding">
+              <p class="finding-number">08</p>
               <div><h3>Orchestration can become dramatically more token-efficient.</h3><p>The next workflow is not hand-holding every modeling step. It is giving the model a small number of high-value visual checkpoints so it can propose, render, inspect and correct. Full Blender scenes and larger worlds should become possible with much less token spend. That is the next hypothesis to test, not a claim this single sample proves.</p></div>
             </article>
           </div>
@@ -249,10 +264,10 @@
             <h2>Four answers for four constraints.</h2>
           </div>
           <div class="picks-grid">
-            <article><p>Best fidelity</p><h3>Sol Ultra</h3><dl><div><dt>Score</dt><dd>79</dd></div><div><dt>Time</dt><dd>52:32</dd></div><div><dt>Tokens</dt><dd>9.47M</dd></div></dl></article>
-            <article><p>Best value</p><h3>Sol Light</h3><dl><div><dt>Score</dt><dd>66</dd></div><div><dt>Time</dt><dd>5:12</dd></div><div><dt>Tokens</dt><dd>665K</dd></div></dl></article>
-            <article><p>Best engineering</p><h3>Sol xhigh</h3><dl><div><dt>Score</dt><dd>77</dd></div><div><dt>Time</dt><dd>16:11</dd></div><div><dt>Tokens</dt><dd>2.73M</dd></div></dl></article>
-            <article><p>Fastest finish</p><h3>Luna Light</h3><dl><div><dt>Score</dt><dd>44</dd></div><div><dt>Time</dt><dd>2:07</dd></div><div><dt>Tokens</dt><dd>230K</dd></div></dl></article>
+            <article><p>Best overall</p><h3>Sol Ultra</h3><dl><div><dt>Score</dt><dd>92</dd></div><div><dt>Geometry</dt><dd>38 / 40</dd></div><div><dt>Tokens</dt><dd>9.47M</dd></div></dl></article>
+            <article><p>Best value</p><h3>Sol Light</h3><dl><div><dt>Score</dt><dd>75</dd></div><div><dt>Geometry</dt><dd>34 / 40</dd></div><div><dt>Tokens</dt><dd>665K</dd></div></dl></article>
+            <article><p>Practical runner-up</p><h3>Sol xhigh</h3><dl><div><dt>Score</dt><dd>85</dd></div><div><dt>Geometry</dt><dd>35 / 40</dd></div><div><dt>Tokens</dt><dd>2.73M</dd></div></dl></article>
+            <article><p>Fastest finish</p><h3>Luna Light</h3><dl><div><dt>Score</dt><dd>46</dd></div><div><dt>Geometry</dt><dd>19 / 40</dd></div><div><dt>Tokens</dt><dd>230K</dd></div></dl></article>
           </div>
         </div>
       </section>
@@ -267,7 +282,7 @@
         </div>
 
         <div class="method-grid">
-          <article><h3>Visual rubric</h3><p>Composition/camera 20; cabin structure 25; environment/depth 20; materials/lighting 20; detail/cleanliness 15. Scores are subjective and specific to this reference.</p></article>
+          <article><h3>Weighted rubric</h3><p>Geometric logic 40; composition 25; lighting, color and visual finish 20; accuracy to the input 15. Each total is the sum of four whole-point manual ratings.</p></article>
           <article id="tokens-note"><h3>Token accounting</h3><p>Reported total = input + output; cached input is a subset of input and reasoning is a subset of output. Sol and Terra Ultra include marginal child-agent usage. Cached tokens were not counted twice.</p></article>
           <article><h3>Runtime</h3><p>Elapsed time comes from Codex <code>task_complete</code> telemetry and includes shell work, Blender execution, inspection and self-correction. Runs overlapped on the same host, so it is not a pure inference-speed test.</p></article>
           <article><h3>Dollar cost</h3><p>These were subscription-backed Codex runs. The local records contain tokens, not a billable API price per model, so tokens are shown as the reproducible cost proxy.</p></article>

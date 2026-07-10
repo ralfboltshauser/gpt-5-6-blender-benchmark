@@ -27,7 +27,7 @@
 
 This repository contains the full source artifacts behind an image-to-Blender capability probe across GPT‑5.6 **Luna**, **Terra**, and **Sol**, plus GPT‑5.5 xhigh as a baseline. Every run received the same image and the same instruction, then worked autonomously through Codex with shell and Blender access.
 
-The interesting result is not simply that the largest configuration won. **More thinking raised the ceiling, but quality was not monotonic.** Some medium and high runs broke their central roof geometry; one light run placed sixth overall; Sol xhigh came within two visual points of Sol Ultra at less than one-third of the token spend.
+The interesting result is not simply that the largest configuration won. **More thinking raised the ceiling, but quality was not monotonic.** Some medium and high runs broke their central roof geometry; Sol Light placed fifth overall; Sol xhigh remained the practical runner-up, but finished seven points behind Ultra once structural logic became the benchmark's largest component.
 
 ## The practical shift
 
@@ -45,16 +45,29 @@ Ultra does more than emit a longer Blender script. It can inspect the rendered i
 
 The implication is not that every scene is now perfect in one call. It is that a workflow can spend its tokens on high-value visual checkpoints instead of hand-holding every modeling step. Full Blender scenes and larger worlds should become possible with much less token spend when the model can propose, render, inspect and correct its own work. That is a hypothesis for the next benchmark, not a claim this single sample proves.
 
+## Scoring rubric
+
+This is a geometry-first benchmark. A broken roof, floating house or physically implausible intersection is weighted more heavily than any other category.
+
+| Factor | Weight | What is judged |
+|---|---:|---|
+| **Geometric logic** | **40** | Coherent roof, shell and foundation; grounded objects; clean attachments; no unintended intersections, disconnected parts or hovering geometry. |
+| **Composition** | **25** | Camera, hierarchy, framing, leading path, balance, useful occlusion and layered scene depth. |
+| **Visual finish** | **20** | Lighting hierarchy, exposure, color depth, material readability, atmosphere and overall beauty. |
+| **Input match** | **15** | Cabin proportions, scene contents, camera, forest, path, props, palette and mood relative to the reference. |
+
+Each score is the sum of four whole-point manual ratings. Ties break in the same priority order: geometry, then composition, visual finish and input match. Geometry asks whether the scene makes physical sense; input match asks whether it reconstructs this particular image.
+
 ## Headline results
 
-| Choice | Run | Visual score | Time | Reported tokens |
+| Choice | Run | Weighted score | Time | Reported tokens |
 |---|---|---:|---:|---:|
-| Best fidelity | **Sol Ultra** | **79 / 100** | 52:32 | 9.47M |
-| Practical sweet spot | **Sol xhigh** | **77 / 100** | 16:11 | 2.73M |
-| Best value | **Sol Light** | **66 / 100** | 5:12 | 665K |
-| Fastest complete run | **Luna Light** | **44 / 100** | 2:07 | 230K |
+| Best overall | **Sol Ultra** | **92 / 100** | 52:32 | 9.47M |
+| Practical runner-up | **Sol xhigh** | **85 / 100** | 16:11 | 2.73M |
+| Best value | **Sol Light** | **75 / 100** | 5:12 | 665K |
+| Fastest complete run | **Luna Light** | **46 / 100** | 2:07 | 230K |
 
-Scores are manual judgments anchored to the reference image at 100; they are not normalized so the best run automatically scores near 100.
+Scores are manual judgments under the rubric above. They are not normalized to force the best run near 100.
 
 <p align="center">
   <img src="site/assets/social/comparison-grid.jpg" alt="Reference beside Luna xhigh, Terra xhigh, and Sol Ultra benchmark renders" width="1000">
@@ -96,49 +109,53 @@ The original folder names use `light` for telemetry effort `low`, and `extra-hig
 
 ## Full results
 
-| Rank | Run | Score | Time | Tokens | Objects | Builder |
-|---:|---|---:|---:|---:|---:|---:|
-| 1 | [Sol Ultra](gpt-5.6-sol-ultra/) | **79** | 52:32 | 9.47M | 717 | 1,129 lines |
-| 2 | [Sol xhigh](gpt-5.6-sol-extra-high/) | **77** | 16:11 | 2.73M | 508 | 777 lines |
-| 3 | [Terra xhigh](gpt-5.6-terra-extra-high/) | **72** | 22:25 | 2.09M | 1,166 | 437 lines |
-| 4 | [GPT‑5.5 xhigh](gpt-5.5-xhigh/) | **71** | 21:34 | 1.61M | 991 | 1,075 lines |
-| 5 | [Terra Ultra](gpt-5.6-terra-ultra/) | **68** | 23:21 | 1.61M | 871 | 597 lines |
-| 6 | [Sol Light](gpt-5.6-sol-light/) | **66** | 5:12 | 665K | 569 | 167 lines |
-| 7 | [Luna xhigh](gpt-5.6-luna-extra-high/) | **62** | 11:07 | 2.02M | 543 | 449 lines |
-| 8 | [Luna High](gpt-5.6-luna-high/) | **61** | 5:57 | 693K | 519 | 428 lines |
-| 9 | [Terra High](gpt-5.6-terra-high/) | **56** | 8:10 | 764K | 439 | 341 lines |
-| 10 | [Sol Medium](gpt-5.6-sol-medium/) | **50** | 6:24 | 838K | 611 | 279 lines |
-| 11 | [Luna Light](gpt-5.6-luna-light/) | **44** | 2:07 | 230K | 163 | 92 lines |
-| 12 | [Terra Medium](gpt-5.6-terra-medium/) | **42** | 4:05 | 246K | 361 | 101 lines |
-| 13 | [Sol High](gpt-5.6-sol-high/) | **41** | 9:23 | 1.23M | 652 | 416 lines |
-| 14 | [Terra Light](gpt-5.6-terra-light/) | **35** | 3:47 | 245K | 408 | 88 lines |
-| 15 | [Luna Medium](gpt-5.6-luna-medium/) | **34** | 3:32 | 248K | 322 | 135 lines |
+| Rank | Run | Total | Geometry /40 | Composition /25 | Finish /20 | Match /15 | Time | Tokens |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | [Sol Ultra](gpt-5.6-sol-ultra/) | **92** | 38 | 24 | 17 | 13 | 52:32 | 9.47M |
+| 2 | [Sol xhigh](gpt-5.6-sol-extra-high/) | **85** | 35 | 23 | 15 | 12 | 16:11 | 2.73M |
+| 3 | [GPT‑5.5 xhigh](gpt-5.5-xhigh/) | **79** | 37 | 17 | 15 | 10 | 21:34 | 1.61M |
+| 4 | [Terra xhigh](gpt-5.6-terra-extra-high/) | **77** | 29 | 21 | 16 | 11 | 22:25 | 2.09M |
+| 5 | [Sol Light](gpt-5.6-sol-light/) | **75** | 34 | 18 | 14 | 9 | 5:12 | 665K |
+| 6 | [Luna High](gpt-5.6-luna-high/) | **74** | 32 | 18 | 16 | 8 | 5:57 | 693K |
+| 7 | [Terra Ultra](gpt-5.6-terra-ultra/) | **70** | 27 | 19 | 14 | 10 | 23:21 | 1.61M |
+| 8 | [Luna xhigh](gpt-5.6-luna-extra-high/) | **69** | 28 | 19 | 13 | 9 | 11:07 | 2.02M |
+| 9 | [Sol Medium](gpt-5.6-sol-medium/) | **62** | 21 | 19 | 14 | 8 | 6:24 | 838K |
+| 10 | [Terra High](gpt-5.6-terra-high/) | **60** | 25 | 15 | 12 | 8 | 8:10 | 764K |
+| 11 | [Sol High](gpt-5.6-sol-high/) | **57** | 14 | 21 | 15 | 7 | 9:23 | 1.23M |
+| 12 | [Luna Light](gpt-5.6-luna-light/) | **46** | 19 | 14 | 8 | 5 | 2:07 | 230K |
+| 13 | [Terra Medium](gpt-5.6-terra-medium/) | **45** | 17 | 13 | 9 | 6 | 4:05 | 246K |
+| 14 | [Terra Light](gpt-5.6-terra-light/) | **39** | 13 | 13 | 8 | 5 | 3:47 | 245K |
+| 15 | [Luna Medium](gpt-5.6-luna-medium/) | **39** | 9 | 15 | 11 | 4 | 3:32 | 248K |
 
-The audited machine-readable table, including input, cached input, output, reasoning, tool-call, geometry, and file data, is available at [`site/assets/data/benchmark.csv`](site/assets/data/benchmark.csv).
+Terra Light wins the 39-point tie on geometry, `13` to `9`. The audited machine-readable table includes all four component scores alongside input, cached input, output, reasoning, tool-call, scene and file data in [`site/assets/data/benchmark.csv`](site/assets/data/benchmark.csv).
 
 ## What the renders show
 
-### 1. Ultra won, narrowly
+### 1. Ultra won clearly
 
-Sol Ultra produced the closest semantic reconstruction at `79/100`. Sol xhigh reached `77/100` with **28.8% of the tokens** and **30.8% of the time**. The final two visual points cost another `6.74M` tokens and roughly 36 minutes.
+Sol Ultra scored `92/100`, with the best geometry, composition and input match plus the richest overall finish. Sol xhigh reached `85/100` with **28.8% of the tokens** and **30.8% of the time**. The final seven points cost another `6.74M` tokens and roughly 36 minutes.
 
-### 2. Sol Light was the value surprise
+### 2. Geometry changes the ranking
 
-At `665K` tokens and `5:12`, Sol Light ranked sixth and beat nine configurations. Its builder is only 167 lines, but it brute-forced 566 mesh objects into a composition that reads clearly.
+GPT‑5.5 xhigh rises to third on the strength of a `37/40` geometry score. Terra xhigh remains visually rich, but crossed roof braces and protruding beams hold it to fourth. Terra Ultra looks attractive, yet its floating plinth, porch and lowest stair pull it down to seventh.
 
-### 3. Reasoning effort was non-monotonic
+### 3. Sol Light was the value surprise
 
-Sol Medium and High produced visibly separated or exploded roof geometry. Terra xhigh outscored Terra Ultra. Luna xhigh spent 2.9× the tokens of Luna High for a one-point visual improvement.
+At `665K` tokens and `5:12`, Sol Light ranked fifth and beat ten configurations. Its builder is only 167 lines, but the important result is visual: it keeps the roof and cabin coherent while several more expensive runs break their primary structure.
+
+### 4. Reasoning effort was non-monotonic
+
+Sol Medium and High produced visibly separated or exploded roof geometry. Terra xhigh outscored Terra Ultra by seven points. Luna xhigh spent 2.9× the tokens of Luna High and still scored five points lower.
 
 <p align="center">
   <img src="site/assets/social/sol-ladder.jpg" alt="GPT-5.6 Sol results from light through ultra, showing non-monotonic visual quality" width="1000">
 </p>
 
-### 4. Every configuration still delivered
+### 5. Every configuration still delivered
 
 All 15 `.blend` files reopen in Blender 5.0.1, and all expected renders are valid and nonblank. Most GPT‑5.6 runs initially used stale Blender API assumptions, especially the `BLENDER_EEVEE_NEXT` enum, and recovered through diagnosis, patching, and re-rendering.
 
-### 5. This is semantic reconstruction, not inverse graphics
+### 6. This is semantic reconstruction, not inverse graphics
 
 None of the generated scripts loads, samples, measures, or camera-calibrates against the reference. The agents infer “cozy low-poly forest cabin” and hand-build a plausible scene from primitives. That is useful visual understanding and tool execution, but it is not strict recovery of the pictured 3D scene.
 
@@ -151,7 +168,7 @@ The strongest builds were separated less by raw polygon count than by four model
 3. **Lighting hierarchy:** warm local window lights, a broad key, and cooler environmental fill.
 4. **Controlled placement:** keeping the path, door, windows, and silhouette readable while adding vegetation.
 
-Sol xhigh is the best engineering balance in this set: five meaningful collections, reusable geometry helpers, deterministic terrain, custom mountains, and 499 meshes. Sol Ultra is the most ambitious. Terra Ultra has the most disciplined placement logic. GPT‑5.5 xhigh is the most software-like standalone builder.
+Sol xhigh is the best engineering balance in this set: five meaningful collections, reusable geometry helpers, deterministic terrain, custom mountains, and 499 meshes. Sol Ultra is the most ambitious. Terra Ultra has disciplined vegetation placement logic, but misses the cabin's ground offset. GPT‑5.5 xhigh is the most software-like standalone builder.
 
 <p align="center">
   <img src="site/assets/social/editorial-reconstruction.jpg" alt="Editorial illustration of a cabin moving from reference image through wireframe to finished geometry" width="1000">
@@ -270,13 +287,14 @@ The primary telemetry source was the local Codex session record for each complet
 - Child histories inherit a parent token baseline; that inherited baseline was subtracted rather than double-counted
 - Dollar cost is not estimated because these were subscription-backed Codex runs without a per-model API billing record
 
-The visual rubric is:
+The weighted rubric is:
 
-- Composition and camera: 20
-- Cabin silhouette and structural coherence: 25
-- Environment completeness and depth: 20
-- Materials, palette, and lighting: 20
-- Handcrafted detail and cleanliness: 15
+- Geometric logic: 40
+- Composition: 25
+- Lighting, color and visual finish: 20
+- Accuracy to the input image: 15
+
+All four ratings are whole-point manual judgments made from the final render, with the editable `.blend` and generated builder used to resolve ambiguous geometry. Totals are simple sums; ties follow the same priority order.
 
 ## Caveats
 
@@ -284,7 +302,7 @@ The visual rubric is:
 - Resolutions, aspect ratios, cameras, Eevee settings, and color management were model-selected rather than normalized.
 - Only eight of 15 outputs stayed near the source's 16:9 framing; every Luna output drifted.
 - The matrix has no `max` run and no Luna Ultra run.
-- Visual scores measure resemblance to this specific reference, not general Blender skill or aesthetic preference.
+- Input-match scores measure resemblance to this specific reference. Geometry, composition and visual-finish scores also measure general scene quality under the published rubric.
 - More objects, polygons, code, or tokens are not automatically evidence of a better scene.
 
 ---
