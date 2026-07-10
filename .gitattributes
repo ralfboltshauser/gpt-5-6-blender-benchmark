@@ -1,0 +1,17 @@
+* text=auto
+
+*.blend binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+
+*.py text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.csv text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.svg text eol=lf

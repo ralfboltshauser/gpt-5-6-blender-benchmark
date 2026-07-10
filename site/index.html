@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f1efe8">
+  <meta name="description" content="A controlled Blender benchmark of GPT-5.6 Luna, Terra, and Sol across 14 model-effort configurations, plus a GPT-5.5 baseline.">
+  <link rel="canonical" href="https://blender-bench.ralfboltshauser.com/">
+  <meta property="og:title" content="One image in. Fifteen Blender scenes out.">
+  <meta property="og:description" content="Same image, same one-line brief: a field test of GPT-5.6's Blender capabilities.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://blender-bench.ralfboltshauser.com/">
+  <meta property="og:image" content="https://blender-bench.ralfboltshauser.com/assets/social/og-card.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://blender-bench.ralfboltshauser.com/assets/social/og-card.png">
+  <title>Pixels to Polygons — GPT-5.6 Blender benchmark</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar shell">
+    <a class="wordmark" href="#top" aria-label="Pixels to Polygons, back to top">
+      <span class="wordmark-mark" aria-hidden="true"></span>
+      Pixels → Polygons
+    </a>
+    <nav aria-label="Article sections">
+      <a href="#setup">Setup</a>
+      <a href="#outputs">Outputs</a>
+      <a href="#findings">Findings</a>
+      <a href="#method">Method</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <article id="top">
+      <header class="hero shell">
+        <div class="eyebrow"><span>Independent field test</span><span>10 July 2026</span></div>
+        <h1>One image in.<br>Fifteen Blender scenes out.</h1>
+        <div class="hero-deck">
+          <p>Same cabin. Same one-line brief. Fourteen GPT‑5.6 configurations across Luna, Terra and Sol—plus GPT‑5.5 as a baseline.</p>
+          <p class="hero-thesis">More thinking bought detail. It did not buy quality in a straight line.</p>
+        </div>
+
+        <dl class="hero-stats" aria-label="Benchmark summary">
+          <div><dt>15 / 15</dt><dd>finished scenes</dd></div>
+          <div><dt>3h 16m</dt><dd>end-to-end runtime</dd></div>
+          <div><dt>24.68M</dt><dd>reported tokens<sup><a href="#tokens-note">1</a></sup></dd></div>
+          <div><dt>2:07</dt><dd>fastest complete run</dd></div>
+        </dl>
+
+        <div class="hero-comparison" aria-label="Reference and highest-scoring output">
+          <figure>
+            <div class="image-frame"><img src="assets/renders/reference.webp" alt="Reference image: a warm low-poly wooden cabin in a layered forest at golden hour" width="1600" height="900"></div>
+            <figcaption><span>Input</span><strong>Reference image</strong></figcaption>
+          </figure>
+          <div class="comparison-arrow" aria-hidden="true">→</div>
+          <figure>
+            <div class="image-frame"><img src="assets/renders/gpt-5-6-sol-ultra.webp" alt="Sol Ultra output: a detailed low-poly cabin, path, props and forest" width="1600" height="900"></div>
+            <figcaption><span>Highest visual score · 79/100</span><strong>GPT‑5.6 Sol · Ultra</strong></figcaption>
+          </figure>
+        </div>
+        <p class="hero-caption">The winner was close. Sol Ultra scored two points above Sol xhigh while using 3.47× the tokens and 3.25× the time.</p>
+      </header>
+
+      <section class="section shell" id="setup">
+        <div class="section-heading">
+          <p class="section-index">01 / Setup</p>
+          <h2>A deliberately under-specified test.</h2>
+          <p>The models received a picture—not a scene graph, asset pack, or modeling recipe. The folder name was the only variable in the prompt.</p>
+        </div>
+
+        <div class="setup-grid">
+          <div class="prompt-card">
+            <p class="card-label">Exact prompt</p>
+            <blockquote>“Build this in Blender. Create and work in a subfolder named <span>{run}</span>.”</blockquote>
+            <button class="text-button" type="button" id="copy-prompt">Copy prompt</button>
+          </div>
+          <dl class="test-facts">
+            <div><dt>Input</dt><dd>One byte-identical 1672 × 941 PNG</dd></div>
+            <div><dt>Environment</dt><dd>Codex, Ubuntu, Blender 5.0.1</dd></div>
+            <div><dt>Deliverable</dt><dd>Editable .blend, Python builder, final render</dd></div>
+            <div><dt>Coverage</dt><dd>low / medium / high / xhigh; ultra on Sol and Terra</dd></div>
+            <div><dt>Runs</dt><dd>One primary attempt per configuration</dd></div>
+          </dl>
+        </div>
+
+        <aside class="coverage-note">
+          <strong>What “all” means here.</strong>
+          The artifacts contain 14 GPT‑5.6 runs: four Luna and five each for Terra and Sol. There is no <code>max</code> run, and no Luna <code>ultra</code> run. Folder labels <code>light</code> and <code>extra-high</code> correspond to telemetry values <code>low</code> and <code>xhigh</code>.
+        </aside>
+      </section>
+
+      <section class="section section-full" id="outputs">
+        <div class="shell section-heading compact-heading">
+          <p class="section-index">02 / Outputs</p>
+          <h2>Every render, as delivered.</h2>
+          <p>Images are re-encoded for the web; native framing is preserved with no crop or retouch. Open any result for its full audit, scene complexity and source files.</p>
+        </div>
+
+        <div class="filter-row shell" aria-label="Filter model outputs">
+          <div class="filters" role="group" aria-label="Model family">
+            <button class="filter active" type="button" data-filter="all" aria-pressed="true">All 15</button>
+            <button class="filter" type="button" data-filter="luna" aria-pressed="false">Luna</button>
+            <button class="filter" type="button" data-filter="terra" aria-pressed="false">Terra</button>
+            <button class="filter" type="button" data-filter="sol" aria-pressed="false">Sol</button>
+            <button class="filter" type="button" data-filter="baseline" aria-pressed="false">GPT‑5.5</button>
+          </div>
+          <p id="result-count" aria-live="polite">Showing 15 outputs</p>
+        </div>
+
+        <div class="gallery shell" id="gallery"></div>
+        <noscript><p class="shell noscript">JavaScript is used only to render the comparison cards. All images and data are also available in the downloadable CSV.</p></noscript>
+      </section>
+
+      <section class="section shell" id="scoreboard">
+        <div class="section-heading split-heading">
+          <div>
+            <p class="section-index">03 / Scoreboard</p>
+            <h2>Quality versus spend.</h2>
+          </div>
+          <p>Visual scores are human judgments anchored to the reference at 100. Tokens include the marginal usage of subagents where spawned.</p>
+        </div>
+
+        <div class="value-chart-wrap">
+          <div class="chart-header">
+            <p class="card-label">Visual score vs. reported tokens</p>
+            <div class="legend" aria-label="Chart legend"><span class="dot luna"></span>Luna <span class="dot terra"></span>Terra <span class="dot sol"></span>Sol <span class="dot baseline"></span>5.5</div>
+          </div>
+          <svg id="value-chart" role="img" aria-label="Scatter plot comparing token usage and visual score for each run"></svg>
+        </div>
+
+        <div class="table-toolbar">
+          <p>Click a row for the detailed audit.</p>
+          <label for="sort-results">Sort by
+            <select id="sort-results">
+              <option value="score-desc">Visual score</option>
+              <option value="tokens-asc">Fewest tokens</option>
+              <option value="time-asc">Fastest</option>
+              <option value="objects-desc">Scene objects</option>
+            </select>
+          </label>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th scope="col">Run</th><th scope="col">Visual</th><th scope="col">Time</th><th scope="col">Tokens</th><th scope="col">Objects</th><th scope="col">Script</th></tr>
+            </thead>
+            <tbody id="scoreboard-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section findings-section" id="findings">
+        <div class="shell">
+          <div class="section-heading">
+            <p class="section-index">04 / Findings</p>
+            <h2>The useful answer is not “use the biggest model.”</h2>
+          </div>
+
+          <div class="finding-list">
+            <article class="finding">
+              <p class="finding-number">01</p>
+              <div><h3>Ultra won the image. xhigh won the argument.</h3><p>Sol Ultra was the closest reconstruction at 79/100. Sol xhigh reached 77 with 29% of the tokens and 31% of the time. That last two-point gain cost 6.74M extra tokens and 36 minutes.</p></div>
+            </article>
+            <article class="finding">
+              <p class="finding-number">02</p>
+              <div><h3>Sol Light was the value surprise.</h3><p>At 665K tokens and 5:12, it scored 66—sixth overall—and beat nine configurations, including multiple medium and high runs. Its 167-line script brute-forced 566 mesh objects but composed them well.</p></div>
+            </article>
+            <article class="finding">
+              <p class="finding-number">03</p>
+              <div><h3>Thinking effort was visibly non-monotonic.</h3><p>Sol medium and high broke their roof geometry. Terra xhigh outscored Terra Ultra. Luna xhigh spent 2.9× the tokens of Luna High for one visual point. More search created more opportunity—and more ways to go wrong.</p></div>
+            </article>
+            <article class="finding">
+              <p class="finding-number">04</p>
+              <div><h3>The benchmark is semantic reconstruction, not inverse graphics.</h3><p>None of the 15 scripts loaded, sampled, calibrated or measured the reference. The agents inferred “cozy low-poly cabin” and hand-built a plausible scene from primitives. That is impressive, but it is a different capability from recovering the pictured 3D scene.</p></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section shell" id="under-the-hood">
+        <div class="section-heading split-heading">
+          <div>
+            <p class="section-index">05 / Under the hood</p>
+            <h2>What separated the strong builds.</h2>
+          </div>
+          <p>I reopened every .blend in Blender 5.0.1 and audited the generated Python rather than judging screenshots alone.</p>
+        </div>
+
+        <div class="craft-grid">
+          <article><span>01</span><h3>Coherent geometry</h3><p>The best runs modeled a continuous terrain, a tapered path and a dimensionally coherent gable. Weak runs stacked decorative slabs until they looked roof-like.</p></article>
+          <article><span>02</span><h3>Composition before detail</h3><p>Path, fence, woodpile, foreground trees and mountain layers mattered more than raw polygon count. Terra xhigh used the most objects; Sol Ultra still scored higher with fewer.</p></article>
+          <article><span>03</span><h3>Lighting hierarchy</h3><p>Warm local window lights, a broad key and cooler environmental fill created depth. A single orange wash made even detailed scenes read flat.</p></article>
+          <article><span>04</span><h3>Recovery mattered</h3><p>All 15 runs shipped, despite most GPT‑5.6 agents first using a stale Eevee engine enum. The chat histories show diagnosis, patching and re-rendering—not one-shot code generation.</p></article>
+        </div>
+
+        <div class="engineering-callout">
+          <p class="card-label">Best implementation</p>
+          <h3>Sol xhigh</h3>
+          <p>Its 777-line builder combined deterministic terrain, reusable modeling helpers, meaningful collections and rich detail in 499 meshes. Sol Ultra was more ambitious; Terra Ultra was more disciplined; GPT‑5.5 was the most software-like standalone tool.</p>
+        </div>
+      </section>
+
+      <section class="section picks-section">
+        <div class="shell">
+          <div class="section-heading">
+            <p class="section-index">06 / If I had to choose</p>
+            <h2>Four answers for four constraints.</h2>
+          </div>
+          <div class="picks-grid">
+            <article><p>Best fidelity</p><h3>Sol Ultra</h3><dl><div><dt>Score</dt><dd>79</dd></div><div><dt>Time</dt><dd>52:32</dd></div><div><dt>Tokens</dt><dd>9.47M</dd></div></dl></article>
+            <article><p>Best value</p><h3>Sol Light</h3><dl><div><dt>Score</dt><dd>66</dd></div><div><dt>Time</dt><dd>5:12</dd></div><div><dt>Tokens</dt><dd>665K</dd></div></dl></article>
+            <article><p>Best engineering</p><h3>Sol xhigh</h3><dl><div><dt>Score</dt><dd>77</dd></div><div><dt>Time</dt><dd>16:11</dd></div><div><dt>Tokens</dt><dd>2.73M</dd></div></dl></article>
+            <article><p>Fastest finish</p><h3>Luna Light</h3><dl><div><dt>Score</dt><dd>44</dd></div><div><dt>Time</dt><dd>2:07</dd></div><div><dt>Tokens</dt><dd>230K</dd></div></dl></article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section shell" id="method">
+        <div class="section-heading split-heading">
+          <div>
+            <p class="section-index">07 / Method & caveats</p>
+            <h2>What this test can—and cannot—say.</h2>
+          </div>
+          <p>The raw renders, editable scenes, generated scripts and machine-readable data ship with this page.</p>
+        </div>
+
+        <div class="method-grid">
+          <article><h3>Visual rubric</h3><p>Composition/camera 20; cabin structure 25; environment/depth 20; materials/lighting 20; detail/cleanliness 15. Scores are subjective and specific to this reference.</p></article>
+          <article id="tokens-note"><h3>Token accounting</h3><p>Reported total = input + output; cached input is a subset of input and reasoning is a subset of output. Sol and Terra Ultra include marginal child-agent usage. Cached tokens were not counted twice.</p></article>
+          <article><h3>Runtime</h3><p>Elapsed time comes from Codex <code>task_complete</code> telemetry and includes shell work, Blender execution, inspection and self-correction. Runs overlapped on the same host, so it is not a pure inference-speed test.</p></article>
+          <article><h3>Dollar cost</h3><p>These were subscription-backed Codex runs. The local records contain tokens, not a billable API price per model, so tokens are shown as the reproducible cost proxy.</p></article>
+          <article><h3>One sample each</h3><p>This is a capability probe, not a variance study. One render per configuration cannot tell us how often a model reaches the same quality.</p></article>
+          <article><h3>No normalization</h3><p>The agents chose camera, aspect ratio, resolution, Eevee settings and color management. Eight of 15 stayed near 16:9; every Luna output drifted. Those choices are part of the result.</p></article>
+        </div>
+
+        <div class="download-strip">
+          <div><p class="card-label">Audit package</p><h3>Inspect the evidence.</h3></div>
+          <div class="download-links">
+            <a href="assets/data/benchmark.csv" download>Benchmark CSV <span>↓</span></a>
+            <a href="assets/social/comparison-grid.png" download>Comparison grid <span>↓</span></a>
+            <a href="assets/social/sol-ladder.png" download>Sol effort ladder <span>↓</span></a>
+            <a href="assets/social/editorial-reconstruction.png" download>Editorial illustration <span>↓</span></a>
+            <a href="https://github.com/ralfboltshauser/gpt-5-6-blender-benchmark" target="_blank" rel="noopener noreferrer">Source on GitHub <span>↗</span></a>
+          </div>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <footer class="footer shell">
+    <p>Built from the source artifacts and local Codex telemetry. No render was regenerated, edited or cropped.</p>
+    <div class="footer-links">
+      <a href="https://github.com/ralfboltshauser/gpt-5-6-blender-benchmark" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      <a href="https://www.linkedin.com/in/ralfboltshauser/" target="_blank" rel="noopener noreferrer">Chat on LinkedIn ↗</a>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </footer>
+
+  <dialog id="run-dialog" aria-labelledby="dialog-title">
+    <button class="dialog-close" type="button" aria-label="Close result details">×</button>
+    <div class="dialog-layout">
+      <div class="dialog-media"><img id="dialog-image" src="assets/renders/reference.webp" alt=""></div>
+      <div class="dialog-copy">
+        <p class="card-label" id="dialog-family"></p>
+        <h2 id="dialog-title"></h2>
+        <p class="dialog-verdict" id="dialog-verdict"></p>
+        <dl class="dialog-metrics" id="dialog-metrics"></dl>
+        <div class="dialog-note"><h3>Visual audit</h3><p id="dialog-note"></p></div>
+        <div class="dialog-note"><h3>Script approach</h3><p id="dialog-engineering"></p></div>
+        <div class="dialog-actions">
+          <a id="dialog-blend" href="#" download>Scene .blend ↓</a>
+          <a id="dialog-script" href="#">Builder .py ↗</a>
+        </div>
+      </div>
+    </div>
+  </dialog>
+</body>
+</html>

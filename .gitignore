@@ -1,0 +1,15 @@
+# Local deployment state
+.vercel/
+site/.vercel/
+
+# Blender backups and transient data
+*.blend1
+**/__pycache__/
+*.py[cod]
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.log
