@@ -29,6 +29,22 @@ This repository contains the full source artifacts behind an image-to-Blender ca
 
 The interesting result is not simply that the largest configuration won. **More thinking raised the ceiling, but quality was not monotonic.** Some medium and high runs broke their central roof geometry; one light run placed sixth overall; Sol xhigh came within two visual points of Sol Ultra at less than one-third of the token spend.
 
+## The practical shift
+
+The score is only half of the result. In the broader image-to-Blender workflow, GPT‑5.6 changed how much hand-holding the model needed. GPT‑5.5 xhigh could make strong scenes, but recurring structural failures often required steering and corrective turns. GPT‑5.6 Sol Ultra can sometimes take the same thin one-shot prompt and get the difficult parts right immediately.
+
+### 1. One-shot reliability moved up
+
+The broken roof is a useful diagnostic. It is not a cosmetic detail: when the roof panels, rafters and gable separate, the primary cabin silhouette has failed. That failure appeared repeatedly in earlier GPT‑5.5 workflows. In this benchmark, some GPT‑5.6 runs, especially Sol Ultra, produced a coherent steep roof in the first autonomous pass. One run per configuration is not a statistical reliability study, but it captures a meaningful change in the practical baseline.
+
+### 2. Ultra closes the visual feedback loop
+
+Ultra does more than emit a longer Blender script. It can inspect the rendered image and identify clipped objects, overlaps, lighting balance and whether the scene has the intended feeling. That loop from geometry to rendered evidence to targeted correction is the important capability change. It explains why visual feedback can matter more than another layer of procedural detail.
+
+### 3. Better orchestration is the next lever
+
+The implication is not that every scene is now perfect in one call. It is that a workflow can spend its tokens on high-value visual checkpoints instead of hand-holding every modeling step. Full Blender scenes and larger worlds should become possible with much less token spend when the model can propose, render, inspect and correct its own work. That is a hypothesis for the next benchmark, not a claim this single sample proves.
+
 ## Headline results
 
 | Choice | Run | Visual score | Time | Reported tokens |

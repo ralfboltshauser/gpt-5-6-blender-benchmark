@@ -41,7 +41,7 @@
         <h1>One image in.<br>Fifteen Blender scenes out.</h1>
         <div class="hero-deck">
           <p>Same cabin. Same one-line brief. Fourteen GPT‑5.6 configurations across Luna, Terra and Sol, plus GPT‑5.5 as a baseline.</p>
-          <p class="hero-thesis">More thinking bought detail. It did not buy quality in a straight line.</p>
+          <p class="hero-thesis">GPT‑5.6 raised the one-shot floor. Ultra made visual feedback part of the loop.</p>
         </div>
 
         <dl class="hero-stats" aria-label="Benchmark summary">
@@ -172,7 +172,8 @@
         <div class="shell">
           <div class="section-heading">
             <p class="section-index">04 / Findings</p>
-            <h2>Model size did not predict the best choice.</h2>
+            <h2>The score is only half the result.</h2>
+            <p>The benchmark measures renders, tokens and time. The larger shift is in the workflow required to get a credible scene out of the model.</p>
           </div>
 
           <div class="finding-list">
@@ -191,6 +192,18 @@
             <article class="finding">
               <p class="finding-number">04</p>
               <div><h3>The benchmark is semantic reconstruction, not inverse graphics.</h3><p>None of the 15 scripts loaded, sampled, calibrated or measured the reference. The agents inferred “cozy low-poly cabin” and hand-built a plausible scene from primitives. That is impressive, but it is a different capability from recovering the pictured 3D scene.</p></div>
+            </article>
+            <article class="finding">
+              <p class="finding-number">05</p>
+              <div><h3>GPT‑5.6 raised the one-shot floor.</h3><p>The broken roof is a structural diagnostic, not a cosmetic detail. Earlier GPT‑5.5 workflows often needed steering when roof panels, rafters and gables separated. In this benchmark, some GPT‑5.6 runs, especially Sol Ultra, got the steep roof coherent in the first autonomous pass. One run per configuration is not a reliability study, but the practical baseline has clearly moved.</p></div>
+            </article>
+            <article class="finding">
+              <p class="finding-number">06</p>
+              <div><h3>Ultra can critique the render, not only write the builder.</h3><p>Its visual feedback loop catches clipped objects, overlaps, lighting balance and whether the scene has the intended feeling. The important loop is geometry to rendered evidence to targeted correction, not simply more procedural detail.</p></div>
+            </article>
+            <article class="finding">
+              <p class="finding-number">07</p>
+              <div><h3>Orchestration can become dramatically more token-efficient.</h3><p>The next workflow is not hand-holding every modeling step. It is giving the model a small number of high-value visual checkpoints so it can propose, render, inspect and correct. Full Blender scenes and larger worlds should become possible with much less token spend. That is the next hypothesis to test, not a claim this single sample proves.</p></div>
             </article>
           </div>
         </div>
