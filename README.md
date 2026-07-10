@@ -147,32 +147,36 @@ Sol xhigh is the best engineering balance in this set: five meaningful collectio
 
 The page now includes a live Three.js view of the highest-scoring scene. This is an optimized presentation derivative, not a replacement for the original benchmark artifact. The `.blend`, generated builder and final render remain untouched.
 
-The source scene made the optimization choice fairly clear. It was already a textureless, flat-color low-poly build. The expensive part was not geometry; it was asking the browser to draw hundreds of separate objects and materials.
+The source scene is a textureless, flat-color low-poly build. Its 51 materials preserve color, but they do not carry the Eevee lighting that gave the final render its depth. A generic browser light rig could keep the model small, but it could not reproduce the authored shadows, warm windows and environmental contrast.
 
 | Asset property | Source scene | Web derivative |
 |---|---:|---:|
-| Mesh objects or primitives | 707 | 4 |
-| Evaluated triangles | 51,031 | 50,763 |
-| Materials | 51 | 4 shader groups |
-| Image textures | 0 | one 256 px palette |
-| Binary size | 3.95 MB initial GLB | 579 KB optimized GLB |
+| Mesh objects or primitives | 707 | 2 |
+| Evaluated triangles | 51,031 | 49,265 |
+| Materials | 51 | 2 unlit materials |
+| Image textures | 0 | two 1024 px lighting atlases |
+| Texture memory | 0 | about 11.2 MB with mipmaps |
+| Binary size | 2.78 MB initial GLB | 597 KB optimized GLB |
 
 The build pipeline:
 
 1. Evaluates the 396 bevel modifiers so the browser receives the intended geometry.
 2. Removes the fixed-camera sky card, unsupported volume fog and two foreground crop trees.
-3. Maps every face to a precomputed 256 × 256 color palette instead of baking a large conventional texture.
-4. Merges the result into matte, metal, water and emissive primitives.
-5. Runs quantization, welding, pruning and Meshopt compression with glTF Transform.
+3. Consolidates the scene into a subject mesh and an environment mesh, then creates unique non-overlapping UVs for each.
+4. Bakes 128-sample Cycles Combined lighting into two 1024 × 1024 lossless PNG masters.
+5. Exports those meshes as `KHR_materials_unlit`, so Three.js does not need runtime lights or shadow maps.
+6. Converts the embedded delivery textures to WebP, then applies quantization, pruning and Meshopt compression.
 
-A 2K color bake or KTX2 texture would add payload and transcoder overhead without adding information to this particular model. The 2.3 KB PNG palette preserves the authored solid colors and provides the UV-backed atlas needed to collapse material state changes. This follows the spirit of the [Khronos real-time asset guidelines](https://github.com/KhronosGroup/3DC-Asset-Creation/blob/main/asset-creation-guidelines/RealtimeAssetCreationGuidelines.md) and Three.js's recommendation to use [glTF for runtime delivery](https://threejs.org/manual/en/loading-3d-models.html).
+Two 1K atlases tested better than one 2K atlas here. They give the cabin its own UV domain, reduce decoded texture memory by half and produce a smaller delivered GLB. WebP keeps the browser path native and simple. KTX2 could reduce GPU memory further, but would add a transcoder for a hover-only asset that already stays near 11 MB. The decision is measured for this scene rather than treated as a universal rule. See Blender's [Cycles baking documentation](https://docs.blender.org/manual/en/5.0/render/cycles/baking.html), the [Three.js glTF loader](https://threejs.org/docs/pages/GLTFLoader.html) and Khronos's [KTX guidance](https://www.khronos.org/ktx/) for the underlying tradeoffs.
 
 The viewer is also intentionally restrained:
 
-- It keeps the WebP render as the initial poster and fallback.
-- Desktop loading begins only when the hero approaches the viewport.
+- It always keeps the WebP render as the default poster and fallback.
+- Fine-pointer desktops warm the 3D asset during idle time, but reveal it only after hover intent.
+- Leaving the frame restores the image unless the visitor has interacted with the model.
 - Touch devices and save-data connections require an explicit “Explore in 3D” tap.
 - Orbit, pitch and zoom are bounded to the useful front hemisphere because the scene was authored for one camera.
+- Passive hover does not capture the mouse wheel. Zoom is enabled only after the view is pinned.
 - Rendering is event-driven and pauses offscreen, following Three.js's [render-on-demand guidance](https://threejs.org/manual/en/rendering-on-demand.html).
 - Drawing resolution is capped by a pixel budget instead of blindly using the device's full pixel ratio.
 
@@ -199,12 +203,12 @@ The reproducible export is in [`scripts/build_web_model.py`](scripts/build_web_m
 │   ├── hero-viewer.js             # Bundled Three.js progressive enhancement
 │   ├── styles.css                 # Responsive editorial presentation
 │   ├── assets/data/benchmark.csv  # Audited benchmark data
-│   ├── assets/models/              # Optimized GLB, palette, build report
+│   ├── assets/models/              # Baked atlases, optimized GLB, build report
 │   ├── assets/renders/            # Web-optimized reference and renders
 │   ├── assets/social/             # Comparison and editorial visuals
 │   └── downloads/                 # Normalized .blend and script files
 ├── src/hero-viewer.js             # Three.js source with bounded OrbitControls
-├── scripts/build_web_model.py     # Blender to palette-atlased GLB pipeline
+├── scripts/build_web_model.py     # Blender lighting-bake and GLB pipeline
 ├── scripts/validate.sh            # No-dependency repository checks
 ├── package.json                   # Pinned Three.js and glTF build tools
 └── .github/workflows/validate.yml # CI validation

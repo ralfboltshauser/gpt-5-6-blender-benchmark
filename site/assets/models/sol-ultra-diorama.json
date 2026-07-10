@@ -2,28 +2,53 @@
   "source_file": "gpt-5.6-sol-ultra/cozy_forest_cabin.blend",
   "source_mesh_objects": 695,
   "source_materials_used": 48,
-  "web_meshes": 4,
+  "web_meshes": 2,
   "web_polygons_by_group": {
-    "matte": 26002,
-    "metal": 646,
-    "water": 8,
-    "emissive": 270
+    "subject": 22562,
+    "environment": 4364
   },
-  "palette": {
-    "file": "sol-ultra-palette.png",
-    "size": [
-      256,
-      256
-    ],
-    "columns": 8,
-    "rows": 6
+  "baked_textures": {
+    "subject": {
+      "file": "sol-ultra-baked-subject.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "png_bytes": 636993
+    },
+    "environment": {
+      "file": "sol-ultra-baked-environment.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "png_bytes": 864127
+    }
   },
+  "bake_samples": 128,
+  "bake_margin": 4,
   "excluded": [
     "Peach sunset sky",
     "Subtle atmospheric volume",
     "Near left crop pine",
     "Near right crop pine"
   ],
-  "unoptimized_glb_bytes": 3948468,
-  "optimized_glb_bytes": 578800
+  "raw_glb_bytes": 2778764,
+  "seconds": {
+    "combine": {
+      "subject": 0.286,
+      "environment": 0.081
+    },
+    "unwrap": {
+      "subject": 0.194,
+      "environment": 0.157
+    },
+    "bake": {
+      "subject": 4.813,
+      "environment": 12.247
+    },
+    "export": 0.2,
+    "total": 18.337
+  },
+  "optimized_glb_bytes": 597280
 }

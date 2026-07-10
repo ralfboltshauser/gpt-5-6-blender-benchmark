@@ -308,35 +308,152 @@ function setupHeroViewer() {
   const host = document.querySelector("[data-model-viewer]");
   if (!host) return;
   const launchButton = host.querySelector("[data-viewer-launch]");
+  const launchLabel = host.querySelector("[data-viewer-launch-label]");
+  const resetButton = host.querySelector("[data-viewer-reset]");
+  const showImageButton = host.querySelector("[data-viewer-poster]");
+  const toolbar = host.querySelector("[data-viewer-toolbar]");
   const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  const manualStart = matchMedia("(pointer: coarse)").matches || Boolean(connection?.saveData);
+  const saveData = Boolean(connection?.saveData);
+  const hoverPreview = matchMedia("(hover: hover) and (pointer: fine)").matches && !saveData;
+  const manualStart = !hoverPreview;
+  host.dataset.enhanced = "true";
   host.dataset.manual = String(manualStart);
+  host.dataset.load = "idle";
+  host.dataset.view = "poster";
+  toolbar.inert = true;
 
-  let started = false;
-  const start = async () => {
-    if (started) return;
-    started = true;
-    launchButton.disabled = true;
-    launchButton.firstChild.textContent = "Loading 3D ";
-    try {
-      const { mountHeroViewer } = await import("./hero-viewer.js");
-      await mountHeroViewer(host);
-    } catch (error) {
-      host.dataset.state = "fallback";
-      launchButton.disabled = false;
-      launchButton.firstChild.textContent = "Static preview ";
-      console.warn("The 3D viewer module could not be loaded.", error);
-    }
+  let controller = null;
+  let loadPromise = null;
+  let pointerInside = false;
+  let pinned = false;
+  let suppressHover = false;
+  let hoverTimer = 0;
+
+  const setView = view => {
+    host.dataset.view = view;
+    controller?.setView(view);
   };
 
-  launchButton.addEventListener("click", start);
-  if (manualStart) return;
+  const setLaunchLabel = label => {
+    launchLabel.textContent = label;
+  };
+
+  const start = ({ announce = false } = {}) => {
+    if (controller) return Promise.resolve(controller);
+    if (loadPromise) return loadPromise;
+    launchButton.disabled = true;
+    if (announce) setLaunchLabel("Loading 3D");
+    loadPromise = import("./hero-viewer.js")
+      .then(({ mountHeroViewer }) => mountHeroViewer(host, { announce }))
+      .then(viewer => {
+        if (!viewer) throw new Error("The 3D viewer did not initialize.");
+        controller = viewer;
+        launchButton.disabled = false;
+        setLaunchLabel("Explore in 3D");
+        if (pinned) setView("pinned");
+        else if (pointerInside && !suppressHover) setView("preview");
+        else setView("poster");
+        return viewer;
+      })
+      .catch(error => {
+        controller = null;
+        loadPromise = null;
+        pinned = false;
+        host.dataset.load = "failed";
+        setView("poster");
+        launchButton.disabled = false;
+        setLaunchLabel("Retry 3D");
+        console.warn("The 3D viewer module could not be loaded.", error);
+        return null;
+      });
+    return loadPromise;
+  };
+
+  const announceReady = () => {
+    const status = host.querySelector("[data-viewer-status]");
+    if (!status) return;
+    status.setAttribute("aria-live", "polite");
+    status.textContent = "Interactive 3D preview ready";
+  };
+
+  const pinViewer = event => {
+    const keyboardActivation = event?.detail === 0;
+    pinned = true;
+    suppressHover = false;
+    setView("pinned");
+    start({ announce: true }).then(viewer => {
+      if (!viewer || !pinned) return;
+      setView("pinned");
+      announceReady();
+      if (keyboardActivation) showImageButton.focus({ preventScroll: true });
+    });
+  };
+
+  const showPoster = () => {
+    pinned = false;
+    suppressHover = true;
+    setView("poster");
+    launchButton.focus({ preventScroll: true });
+  };
+
+  launchButton.addEventListener("click", pinViewer);
+  resetButton.addEventListener("click", () => controller?.resetView());
+  showImageButton.addEventListener("click", showPoster);
+
+  host.addEventListener("pointerenter", () => {
+    if (!hoverPreview) return;
+    pointerInside = true;
+    suppressHover = false;
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(() => {
+      if (!pointerInside || suppressHover || pinned) return;
+      setView("preview");
+      start().then(viewer => {
+        if (viewer && pointerInside && !pinned && !suppressHover) setView("preview");
+      });
+    }, 120);
+  });
+
+  host.addEventListener("pointerleave", () => {
+    pointerInside = false;
+    suppressHover = false;
+    clearTimeout(hoverTimer);
+    if (!pinned) setView("poster");
+  });
+
+  // Any deliberate canvas interaction pins the live view. Passive hover does
+  // not capture the wheel, so the page remains easy to scroll.
+  host.addEventListener("pointerdown", event => {
+    if (event.target.closest("canvas") && host.dataset.view === "preview") {
+      pinned = true;
+      setView("pinned");
+    }
+  });
+
+  host.addEventListener("viewer-error", () => {
+    controller?.disposeViewer();
+    controller = null;
+    loadPromise = null;
+    pinned = false;
+    host.dataset.viewerMounted = "false";
+    launchButton.disabled = false;
+    setLaunchLabel("Retry 3D");
+    setView("poster");
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && host.dataset.view !== "poster") showPoster();
+  });
+
+  if (!hoverPreview) return;
 
   const loadObserver = new IntersectionObserver((entries) => {
     if (!entries[0].isIntersecting) return;
     loadObserver.disconnect();
-    start();
-  }, { rootMargin: "500px" });
+    const warm = () => start({ announce: false });
+    if ("requestIdleCallback" in window) requestIdleCallback(warm, { timeout: 1800 });
+    else setTimeout(warm, 600);
+  }, { rootMargin: "250px" });
   loadObserver.observe(host);
 }
 

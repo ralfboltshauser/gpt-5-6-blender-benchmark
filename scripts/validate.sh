@@ -20,7 +20,10 @@ node --check site/hero-viewer.js
 [[ -s site/assets/models/sol-ultra-diorama.glb ]] || fail "optimized Sol Ultra web model is missing"
 model_bytes=$(wc -c < site/assets/models/sol-ultra-diorama.glb | tr -d ' ')
 (( model_bytes < 750000 )) || fail "optimized web model exceeds 750 KB: $model_bytes bytes"
-[[ -s site/assets/models/sol-ultra-palette.png ]] || fail "Sol Ultra palette atlas is missing"
+[[ -s site/assets/models/sol-ultra-baked-subject.png ]] || fail "Sol Ultra subject bake is missing"
+[[ -s site/assets/models/sol-ultra-baked-environment.png ]] || fail "Sol Ultra environment bake is missing"
+grep -q '"web_meshes": 2' site/assets/models/sol-ultra-diorama.json || fail "web model should contain two baked meshes"
+grep -q '"bake_samples": 128' site/assets/models/sol-ultra-diorama.json || fail "web model bake settings changed"
 
 if grep -R -n $'\u2014' README.md site --include='*.html' --include='*.css' --include='*.js' --include='*.md'; then
   fail "published copy contains an em dash"

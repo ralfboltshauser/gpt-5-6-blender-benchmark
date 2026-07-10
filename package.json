@@ -2,7 +2,7 @@
   "name": "gpt-5-6-blender-benchmark",
   "private": true,
   "scripts": {
-    "build:model": "blender --background gpt-5.6-sol-ultra/cozy_forest_cabin.blend --python scripts/build_web_model.py && gltf-transform optimize site/assets/models/sol-ultra-diorama.glb site/assets/models/sol-ultra-diorama.optimized.glb --compress meshopt --texture-compress false && node scripts/finalize_web_model.mjs",
+    "build:model": "blender --background gpt-5.6-sol-ultra/cozy_forest_cabin.blend --python scripts/build_web_model.py && gltf-transform optimize site/assets/models/sol-ultra-diorama.glb site/assets/models/sol-ultra-diorama.optimized.glb --compress meshopt --texture-compress webp --texture-size 1024 --palette false && node scripts/finalize_web_model.mjs",
     "build:viewer": "esbuild src/hero-viewer.js --bundle --format=esm --minify --outfile=site/hero-viewer.js",
     "build": "npm run build:model && npm run build:viewer",
     "validate": "bash scripts/validate.sh"

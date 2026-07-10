@@ -1,46 +1,42 @@
-"""Build the browser-ready Sol Ultra diorama.
+"""Build the browser-ready, baked-lighting Sol Ultra diorama.
 
 Run with:
     blender --background gpt-5.6-sol-ultra/cozy_forest_cabin.blend \
       --python scripts/build_web_model.py
 
-The benchmark source scene stays untouched. This exporter evaluates modifiers,
-combines hundreds of small objects into four draw-call groups, maps every face
-to a compact palette atlas, and exports a single glTF Binary file.
+The benchmark source remains untouched. The derivative web asset evaluates all
+modifiers, consolidates the scene into subject and environment meshes, creates
+unique UV atlases, and bakes the authored lighting with Cycles. The exported
+materials are unlit, so the browser does not need a real-time light or shadow
+rig to reproduce the scene's depth.
 """
 
 from __future__ import annotations
 
 import json
 import math
+import time
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
 
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = ROOT / "site" / "assets" / "models"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-ATLAS_PATH = OUTPUT_DIR / "sol-ultra-palette.png"
 GLB_PATH = OUTPUT_DIR / "sol-ultra-diorama.glb"
 REPORT_PATH = OUTPUT_DIR / "sol-ultra-diorama.json"
 
-INCLUDED_COLLECTIONS = {
-    "TERRAIN",
-    "BACKGROUND",
-    "CABIN",
-    "ROOF",
-    "PORCH",
-    "PROPS",
-    "VEGETATION",
-    "DETAILS",
-}
+ATLAS_SIZE = 1024
+BAKE_SAMPLES = 128
+BAKE_MARGIN = 4
 
-# These two trees were deliberately placed to crop the original camera frame.
-# Removing them from the derivative viewer keeps the cabin readable while the
-# user orbits. They remain unchanged in the benchmark .blend and final render.
+SUBJECT_COLLECTIONS = {"CABIN", "ROOF", "PORCH", "PROPS", "DETAILS"}
+ENVIRONMENT_COLLECTIONS = {"TERRAIN", "BACKGROUND", "VEGETATION"}
+
+# The sky card and volume only work from the authored camera. The two crop trees
+# are also omitted so the cabin stays readable across the bounded web orbit.
 EXCLUDED_PREFIXES = (
     "Peach sunset sky",
     "Subtle atmospheric volume",
@@ -48,255 +44,239 @@ EXCLUDED_PREFIXES = (
     "Near right crop pine",
 )
 
-EMISSIVE_MATERIALS = {"Window Glow", "Window Core"}
-WATER_MATERIALS = {"Distant Water"}
 
-ATLAS_SIZE = 256
-ATLAS_COLUMNS = 8
-
-
-def material_base_color(material: bpy.types.Material) -> tuple[float, float, float, float]:
-    """Read the authored Principled color, with a diffuse-color fallback."""
-    if material and material.use_nodes and material.node_tree:
-        principled = material.node_tree.nodes.get("Principled BSDF")
-        if principled:
-            socket = principled.inputs.get("Base Color")
-            if socket:
-                return tuple(float(value) for value in socket.default_value)
-    if material:
-        return tuple(float(value) for value in material.diffuse_color)
-    return (0.5, 0.5, 0.5, 1.0)
-
-
-def material_group(material: bpy.types.Material) -> str:
-    if material.name in EMISSIVE_MATERIALS:
-        return "emissive"
-    if material.name in WATER_MATERIALS:
-        return "water"
-    if material.use_nodes and material.node_tree:
-        principled = material.node_tree.nodes.get("Principled BSDF")
-        if principled:
-            metallic = principled.inputs.get("Metallic")
-            if metallic and float(metallic.default_value) > 0.1:
-                return "metal"
-    return "matte"
-
-
-def source_objects() -> list[bpy.types.Object]:
-    selected = []
+def source_groups() -> dict[str, list[bpy.types.Object]]:
+    groups = {"subject": [], "environment": []}
     for obj in bpy.context.scene.objects:
-        if obj.type != "MESH":
+        if obj.type != "MESH" or obj.name.startswith(EXCLUDED_PREFIXES):
             continue
-        if not any(collection.name in INCLUDED_COLLECTIONS for collection in obj.users_collection):
-            continue
-        if obj.name.startswith(EXCLUDED_PREFIXES):
-            continue
-        selected.append(obj)
-    return selected
+        collections = {collection.name for collection in obj.users_collection}
+        if collections & SUBJECT_COLLECTIONS:
+            groups["subject"].append(obj)
+        elif collections & ENVIRONMENT_COLLECTIONS:
+            groups["environment"].append(obj)
+    return groups
 
 
-def used_materials(objects: list[bpy.types.Object]) -> list[bpy.types.Material]:
+def combine_evaluated_meshes(
+    name: str,
+    objects: list[bpy.types.Object],
+    depsgraph,
+    export_collection: bpy.types.Collection,
+) -> tuple[bpy.types.Object, list[str]]:
+    vertices = []
+    faces = []
+    face_materials = []
     materials = {}
-    for obj in objects:
-        for slot in obj.material_slots:
-            if slot.material:
-                materials[slot.material.name] = slot.material
-    return [materials[name] for name in sorted(materials)]
 
-
-def build_palette(materials: list[bpy.types.Material]):
-    rows = math.ceil(len(materials) / ATLAS_COLUMNS)
-    cell_width = ATLAS_SIZE // ATLAS_COLUMNS
-    cell_height = ATLAS_SIZE // rows
-    pixels = [0.0] * (ATLAS_SIZE * ATLAS_SIZE * 4)
-    uv_by_material = {}
-
-    for index, material in enumerate(materials):
-        column = index % ATLAS_COLUMNS
-        row = index // ATLAS_COLUMNS
-        color = material_base_color(material)
-        start_x = column * cell_width
-        end_x = ATLAS_SIZE if column == ATLAS_COLUMNS - 1 else (column + 1) * cell_width
-        start_y = row * cell_height
-        end_y = ATLAS_SIZE if row == rows - 1 else (row + 1) * cell_height
-        for y in range(start_y, end_y):
-            row_offset = y * ATLAS_SIZE * 4
-            for x in range(start_x, end_x):
-                offset = row_offset + x * 4
-                pixels[offset:offset + 4] = color
-        uv_by_material[material.name] = (
-            (start_x + (end_x - start_x) * 0.5) / ATLAS_SIZE,
-            (start_y + (end_y - start_y) * 0.5) / ATLAS_SIZE,
+    for source in objects:
+        evaluated = source.evaluated_get(depsgraph)
+        mesh = bpy.data.meshes.new_from_object(
+            evaluated,
+            preserve_all_data_layers=False,
+            depsgraph=depsgraph,
         )
+        offset = len(vertices)
+        vertices.extend(tuple(evaluated.matrix_world @ vertex.co) for vertex in mesh.vertices)
+        slots = [slot.material for slot in source.material_slots]
+        for polygon in mesh.polygons:
+            if not slots:
+                continue
+            material = slots[min(polygon.material_index, len(slots) - 1)]
+            if material is None:
+                continue
+            materials[material.name] = material
+            faces.append(tuple(offset + index for index in polygon.vertices))
+            face_materials.append(material.name)
+        bpy.data.meshes.remove(mesh)
 
-    image = bpy.data.images.get("Sol Ultra web palette")
-    if image:
-        bpy.data.images.remove(image)
-    image = bpy.data.images.new(
-        "Sol Ultra web palette",
-        width=ATLAS_SIZE,
-        height=ATLAS_SIZE,
-        alpha=True,
-        float_buffer=False,
+    material_names = sorted(materials)
+    material_indices = {material_name: index for index, material_name in enumerate(material_names)}
+    mesh = bpy.data.meshes.new(f"Sol Ultra {name} baked mesh")
+    mesh.from_pydata(vertices, [], faces)
+    for material_name in material_names:
+        mesh.materials.append(materials[material_name])
+    for polygon, material_name in zip(mesh.polygons, face_materials):
+        polygon.material_index = material_indices[material_name]
+        polygon.use_smooth = False
+    mesh.validate(clean_customdata=False)
+    mesh.update(calc_edges=True)
+
+    obj = bpy.data.objects.new(f"Sol Ultra baked {name}", mesh)
+    obj["source"] = "GPT-5.6 Sol Ultra benchmark"
+    obj["web_optimization"] = "Cycles-baked lighting and consolidated geometry"
+    export_collection.objects.link(obj)
+    return obj, material_names
+
+
+def unwrap_for_bake(obj: bpy.types.Object) -> str:
+    bpy.ops.object.select_all(action="DESELECT")
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.smart_project(
+        angle_limit=math.radians(66.0),
+        margin_method="SCALED",
+        island_margin=max(0.001, BAKE_MARGIN / ATLAS_SIZE),
+        area_weight=0.25,
+        correct_aspect=True,
+        scale_to_bounds=True,
     )
-    image.colorspace_settings.name = "sRGB"
-    image.pixels.foreach_set(pixels)
-    image.filepath_raw = str(ATLAS_PATH)
-    image.file_format = "PNG"
-    image.save()
-    image.pack()
-    return image, uv_by_material, rows
+    bpy.ops.object.mode_set(mode="OBJECT")
+    uv_layer = obj.data.uv_layers.active
+    uv_layer.name = "Baked UV"
+    uv_layer.active_render = True
+    return uv_layer.name
 
 
-def make_atlas_material(name: str, image: bpy.types.Image, group: str) -> bpy.types.Material:
-    material = bpy.data.materials.new(name)
+def add_bake_target_nodes(obj: bpy.types.Object, image: bpy.types.Image, node_name: str) -> None:
+    for material in obj.data.materials:
+        if material is None:
+            continue
+        material.use_nodes = True
+        nodes = material.node_tree.nodes
+        for node in nodes:
+            node.select = False
+        target = nodes.get(node_name) or nodes.new("ShaderNodeTexImage")
+        target.name = node_name
+        target.label = "Web combined-lighting bake target"
+        target.image = image
+        target.select = True
+        nodes.active = target
+
+
+def make_unlit_material(name: str, image: bpy.types.Image) -> bpy.types.Material:
+    material = bpy.data.materials.new(f"Sol Ultra baked {name} lighting")
     material.use_nodes = True
+    material.use_backface_culling = False
     nodes = material.node_tree.nodes
     links = material.node_tree.links
     nodes.clear()
 
     output = nodes.new("ShaderNodeOutputMaterial")
-    output.location = (420, 0)
-    principled = nodes.new("ShaderNodeBsdfPrincipled")
-    principled.location = (100, 0)
+    background = nodes.new("ShaderNodeBackground")
     texture = nodes.new("ShaderNodeTexImage")
-    texture.location = (-260, 40)
     texture.image = image
-    texture.interpolation = "Closest"
-    texture.extension = "CLIP"
-
-    links.new(texture.outputs["Color"], principled.inputs["Base Color"])
-    links.new(principled.outputs["BSDF"], output.inputs["Surface"])
-
-    principled.inputs["Roughness"].default_value = 0.76
-    if group == "metal":
-        principled.inputs["Metallic"].default_value = 0.5
-        principled.inputs["Roughness"].default_value = 0.44
-    elif group == "water":
-        principled.inputs["Metallic"].default_value = 0.08
-        principled.inputs["Roughness"].default_value = 0.28
-    elif group == "emissive":
-        links.new(texture.outputs["Color"], principled.inputs["Emission Color"])
-        principled.inputs["Emission Strength"].default_value = 2.8
-        principled.inputs["Roughness"].default_value = 0.26
-
-    material.diffuse_color = (0.5, 0.5, 0.5, 1.0)
+    texture.interpolation = "Linear"
+    texture.extension = "EXTEND"
+    links.new(texture.outputs["Color"], background.inputs["Color"])
+    links.new(background.outputs["Background"], output.inputs["Surface"])
     return material
 
 
-def evaluated_mesh(obj: bpy.types.Object, depsgraph):
-    evaluated = obj.evaluated_get(depsgraph)
-    mesh = bpy.data.meshes.new_from_object(
-        evaluated,
-        preserve_all_data_layers=False,
-        depsgraph=depsgraph,
-    )
-    return evaluated, mesh
+def configure_cycles(scene: bpy.types.Scene) -> None:
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = BAKE_SAMPLES
+    scene.cycles.use_adaptive_sampling = True
+    scene.cycles.adaptive_threshold = 0.03
+    scene.cycles.use_denoising = False
+    scene.render.bake.use_pass_direct = True
+    scene.render.bake.use_pass_indirect = True
+    scene.render.bake.use_pass_color = True
+    scene.render.bake.margin = BAKE_MARGIN
+    scene.render.bake.margin_type = "EXTEND"
 
 
-def combine_group(
-    name: str,
-    group: str,
-    objects: list[bpy.types.Object],
-    atlas_material: bpy.types.Material,
-    uv_by_material: dict[str, tuple[float, float]],
-    depsgraph,
-) -> tuple[bpy.types.Object | None, int]:
-    vertices = []
-    faces = []
-    face_materials = []
+started = time.perf_counter()
+groups = source_groups()
+sources = [obj for group in groups.values() for obj in group]
+for source in sources:
+    source.hide_render = True
+for obj in bpy.context.scene.objects:
+    if obj.type == "MESH" and obj.name.startswith(EXCLUDED_PREFIXES):
+        obj.hide_render = True
 
-    for source in objects:
-        evaluated, mesh = evaluated_mesh(source, depsgraph)
-        matrix = evaluated.matrix_world
-        vertex_offset = len(vertices)
-        vertices.extend(tuple(matrix @ vertex.co) for vertex in mesh.vertices)
-
-        slots = [slot.material for slot in source.material_slots]
-        for polygon in mesh.polygons:
-            if slots:
-                slot_index = min(polygon.material_index, len(slots) - 1)
-                source_material = slots[slot_index]
-            else:
-                source_material = None
-            if not source_material or material_group(source_material) != group:
-                continue
-            faces.append(tuple(vertex_offset + index for index in polygon.vertices))
-            face_materials.append(source_material.name)
-        bpy.data.meshes.remove(mesh)
-
-    if not faces:
-        return None, 0
-
-    mesh = bpy.data.meshes.new(f"{name} mesh")
-    mesh.from_pydata(vertices, [], faces)
-    mesh.materials.append(atlas_material)
-    mesh.validate(clean_customdata=False)
-    mesh.update(calc_edges=True)
-    uv_layer = mesh.uv_layers.new(name="Palette UV")
-    for polygon, material_name in zip(mesh.polygons, face_materials):
-        polygon.use_smooth = False
-        uv = uv_by_material[material_name]
-        for loop_index in polygon.loop_indices:
-            uv_layer.data[loop_index].uv = uv
-
-    obj = bpy.data.objects.new(name, mesh)
-    export_collection.objects.link(obj)
-    obj["source"] = "GPT-5.6 Sol Ultra benchmark"
-    obj["web_optimization"] = "palette-atlased and draw-call merged"
-    return obj, len(mesh.polygons)
-
-
-objects = source_objects()
-materials = used_materials(objects)
-palette_image, palette_uvs, atlas_rows = build_palette(materials)
-
-export_collection = bpy.data.collections.get("WEB_EXPORT")
+export_collection = bpy.data.collections.get("WEB_BAKED_EXPORT")
 if export_collection:
     for existing in list(export_collection.objects):
         bpy.data.objects.remove(existing, do_unlink=True)
 else:
-    export_collection = bpy.data.collections.new("WEB_EXPORT")
+    export_collection = bpy.data.collections.new("WEB_BAKED_EXPORT")
     bpy.context.scene.collection.children.link(export_collection)
 
-atlas_materials = {
-    group: make_atlas_material(f"Web {group.title()}", palette_image, group)
-    for group in ("matte", "metal", "water", "emissive")
-}
-
 depsgraph = bpy.context.evaluated_depsgraph_get()
-objects_by_group = {group: [] for group in atlas_materials}
-for obj in objects:
-    groups = {
-        material_group(slot.material)
-        for slot in obj.material_slots
-        if slot.material
-    }
-    for group in groups:
-        objects_by_group[group].append(obj)
+targets = {}
+source_material_names = set()
+combine_seconds = {}
+unwrap_seconds = {}
+uv_layers = {}
 
-created = []
-polygon_counts = {}
-for group, group_objects in objects_by_group.items():
-    combined, polygon_count = combine_group(
-        f"Sol Ultra {group.title()}",
-        group,
-        group_objects,
-        atlas_materials[group],
-        palette_uvs,
-        depsgraph,
+for name, objects in groups.items():
+    tick = time.perf_counter()
+    target, material_names = combine_evaluated_meshes(name, objects, depsgraph, export_collection)
+    combine_seconds[name] = round(time.perf_counter() - tick, 3)
+    targets[name] = target
+    source_material_names.update(material_names)
+
+    tick = time.perf_counter()
+    uv_layers[name] = unwrap_for_bake(target)
+    unwrap_seconds[name] = round(time.perf_counter() - tick, 3)
+
+scene = bpy.context.scene
+configure_cycles(scene)
+
+images = {}
+bake_seconds = {}
+png_bytes = {}
+for name, target in targets.items():
+    image = bpy.data.images.new(
+        f"Sol Ultra {name} combined-lighting bake",
+        width=ATLAS_SIZE,
+        height=ATLAS_SIZE,
+        alpha=False,
+        float_buffer=False,
     )
-    if combined:
-        created.append(combined)
-        polygon_counts[group] = polygon_count
+    image.generated_color = (0.03, 0.03, 0.03, 1.0)
+    image.colorspace_settings.name = "sRGB"
+    add_bake_target_nodes(target, image, f"SOL_ULTRA_{name.upper()}_BAKE_TARGET")
+
+    bpy.ops.object.select_all(action="DESELECT")
+    target.select_set(True)
+    bpy.context.view_layer.objects.active = target
+    tick = time.perf_counter()
+    bpy.ops.object.bake(
+        type="COMBINED",
+        pass_filter={
+            "DIRECT",
+            "INDIRECT",
+            "COLOR",
+            "DIFFUSE",
+            "GLOSSY",
+            "TRANSMISSION",
+            "EMIT",
+        },
+        margin=BAKE_MARGIN,
+        use_clear=True,
+        target="IMAGE_TEXTURES",
+        save_mode="INTERNAL",
+        uv_layer=uv_layers[name],
+    )
+    bake_seconds[name] = round(time.perf_counter() - tick, 3)
+
+    png_path = OUTPUT_DIR / f"sol-ultra-baked-{name}.png"
+    image.filepath_raw = str(png_path)
+    image.file_format = "PNG"
+    image.save()
+    image.pack()
+    png_bytes[name] = png_path.stat().st_size
+    images[name] = image
+
+for name, target in targets.items():
+    target.data.materials.clear()
+    target.data.materials.append(make_unlit_material(name, images[name]))
+    for polygon in target.data.polygons:
+        polygon.material_index = 0
 
 bpy.ops.object.select_all(action="DESELECT")
-for obj in created:
-    obj.select_set(True)
-    obj.hide_render = False
-    obj.hide_set(False)
-bpy.context.view_layer.objects.active = created[0]
+for target in targets.values():
+    target.hide_render = False
+    target.hide_set(False)
+    target.select_set(True)
+bpy.context.view_layer.objects.active = targets["subject"]
 
+export_tick = time.perf_counter()
 bpy.ops.export_scene.gltf(
     filepath=str(GLB_PATH),
     export_format="GLB",
@@ -306,27 +286,41 @@ bpy.ops.export_scene.gltf(
     export_lights=False,
     export_materials="EXPORT",
     export_texcoords=True,
-    export_normals=True,
+    export_normals=False,
     export_tangents=False,
     export_attributes=False,
     export_extras=True,
     export_yup=True,
 )
+export_seconds = round(time.perf_counter() - export_tick, 3)
 
 report = {
     "source_file": "gpt-5.6-sol-ultra/cozy_forest_cabin.blend",
-    "source_mesh_objects": len(objects),
-    "source_materials_used": len(materials),
-    "web_meshes": len(created),
-    "web_polygons_by_group": polygon_counts,
-    "palette": {
-        "file": ATLAS_PATH.name,
-        "size": [ATLAS_SIZE, ATLAS_SIZE],
-        "columns": ATLAS_COLUMNS,
-        "rows": atlas_rows,
+    "source_mesh_objects": len(sources),
+    "source_materials_used": len(source_material_names),
+    "web_meshes": len(targets),
+    "web_polygons_by_group": {
+        name: len(target.data.polygons) for name, target in targets.items()
     },
+    "baked_textures": {
+        name: {
+            "file": f"sol-ultra-baked-{name}.png",
+            "size": [ATLAS_SIZE, ATLAS_SIZE],
+            "png_bytes": png_bytes[name],
+        }
+        for name in targets
+    },
+    "bake_samples": BAKE_SAMPLES,
+    "bake_margin": BAKE_MARGIN,
     "excluded": list(EXCLUDED_PREFIXES),
-    "unoptimized_glb_bytes": GLB_PATH.stat().st_size,
+    "raw_glb_bytes": GLB_PATH.stat().st_size,
+    "seconds": {
+        "combine": combine_seconds,
+        "unwrap": unwrap_seconds,
+        "bake": bake_seconds,
+        "export": export_seconds,
+        "total": round(time.perf_counter() - started, 3),
+    },
 }
 REPORT_PATH.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 
