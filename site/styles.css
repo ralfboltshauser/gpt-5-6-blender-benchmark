@@ -418,6 +418,16 @@ code {
   line-height: 1.1;
 }
 .prompt-card blockquote span { color: #f0a279; }
+.prompt-run-token { white-space: nowrap; }
+.prompt-run-cycle {
+  display: inline-block;
+  min-width: 19ch;
+  font-variant-ligatures: none;
+  transition: opacity .14s ease, transform .14s ease;
+}
+.prompt-run-cycle.is-changing { opacity: 0; transform: translateY(.12em); }
+.prompt-cycle-note { margin: 14px 0 0; color: #aaa99f; font-size: 11px; letter-spacing: .02em; }
+.prompt-cycle-note code { color: #f0a279; }
 .text-button {
   align-self: flex-start;
   padding: 0 0 3px;
