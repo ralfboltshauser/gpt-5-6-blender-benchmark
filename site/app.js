@@ -257,6 +257,63 @@ renderGallery();
 renderScoreboard();
 renderChart();
 
+function setupPromptCycle() {
+  const cycle = document.querySelector("[data-run-cycle]");
+  const card = cycle?.closest(".prompt-card");
+  if (!cycle || !card) return;
+
+  const labels = runs
+    .slice()
+    .sort((left, right) => right.score - left.score)
+    .map(run => run.slug
+      .replace(/^gpt-(\d)-(\d)-/, "gpt-$1.$2-")
+      .replace("-extra-high", "-xhigh"));
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  let index = 0;
+  let timer = 0;
+  let changeTimer = 0;
+
+  const update = (animate = true) => {
+    const next = labels[index];
+    index = (index + 1) % labels.length;
+    if (!animate || reducedMotion.matches) {
+      cycle.textContent = next;
+      cycle.classList.remove("is-changing");
+      return;
+    }
+    cycle.classList.add("is-changing");
+    window.clearTimeout(changeTimer);
+    changeTimer = window.setTimeout(() => {
+      cycle.textContent = next;
+      cycle.classList.remove("is-changing");
+    }, 140);
+  };
+
+  const stop = () => {
+    window.clearInterval(timer);
+    timer = 0;
+  };
+  const start = () => {
+    if (reducedMotion.matches || timer || document.hidden) return;
+    timer = window.setInterval(() => update(true), 1900);
+  };
+
+  update(false);
+  card.addEventListener("pointerenter", stop);
+  card.addEventListener("pointerleave", start);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stop();
+    else start();
+  });
+  reducedMotion.addEventListener?.("change", () => {
+    stop();
+    if (!reducedMotion.matches) start();
+  });
+  start();
+}
+
+setupPromptCycle();
+
 document.addEventListener("click", event => {
   const open = event.target.closest("[data-slug]");
   if (open) openRun(open.dataset.slug);
